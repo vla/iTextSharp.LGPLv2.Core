@@ -1,0 +1,25 @@
+<Project>
+
+  <PropertyGroup>
+    <Version>1.7.5</Version>
+    <PackageVersion>1.7.5</PackageVersion>
+    <Authors>Vahid Nasiri;vla</Authors>
+    <Description>iTextSharp.LGPLv2.Core is an unofficial port of the last LGPL version of the iTextSharp (V4.1.6) to .NET Core.</Description>
+    <Product>Bloom filters</Product>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)/artifacts</PackageOutputPath>
+    <PackageTags>PdfReport;Excel;Export;iTextSharp;PDF;Report;Reporting;Persian;.NET Core;aspnetcore</PackageTags>
+    <PackageProjectUrl>https://github.com/vla/iTextSharp.LGPLv2.Core</PackageProjectUrl>
+    <RepositoryUrl>git://github.com/vla/iTextSharp.LGPLv2.Core</RepositoryUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' != 'Debug' ">
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly>True</SignAssembly>
+    <DelaySign>False</DelaySign>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/sign.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+</Project>

@@ -127,18 +127,18 @@ namespace iTextSharp.text
         /// <summary>
         /// Gets the product name.
         /// </summary>
-        public static string Product { get; } = "iTextSharp.LGPLv2.Core";
+        public static string Product { get; set; } = "iTextSharp.LGPLv2.Core";
 
 #if NET40
         /// <summary>
         /// Gets the release number.
         /// </summary>
-        public static string Release { get; } = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public static string Release { get; set; } = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 #else
         /// <summary>
         /// Gets the release number.
         /// </summary>
-        public static string Release { get; } = typeof(Document).GetTypeInfo().Assembly.GetName().Version.ToString();
+        public static string Release { get; set; } = typeof(Document).GetTypeInfo().Assembly.GetName().Version.ToString();
 #endif
         /// <summary>
         /// Returns the lower left y-coordinate.

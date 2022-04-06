@@ -40,7 +40,7 @@ namespace System.util.collections
                     throw new ArgumentNullException("key");
 
                 // create new node
-                OrderedTreeNode node = new();
+                OrderedTreeNode node = new OrderedTreeNode();
                 OrderedTreeNode temp = _rbTree; // grab the rbTree node of the tree
 
                 // traverse tree - find where node belongs
@@ -102,7 +102,7 @@ namespace System.util.collections
                 throw new ArgumentNullException(nameof(key));
 
             // create new node
-            OrderedTreeNode node = new();
+            OrderedTreeNode node = new OrderedTreeNode();
             OrderedTreeNode temp = _rbTree; // grab the rbTree node of the tree
 
             // traverse tree - find where node belongs
@@ -533,7 +533,7 @@ namespace System.util.collections
             // If the deleted node is red, the red black properties still hold.
             // If the deleted node is black, the tree needs rebalancing
 
-            OrderedTreeNode x = new(); // work node to contain the replacement node
+            OrderedTreeNode x = new OrderedTreeNode(); // work node to contain the replacement node
             OrderedTreeNode y; // work node
 
             // find the replacement node (the successor to x) - the node one with
