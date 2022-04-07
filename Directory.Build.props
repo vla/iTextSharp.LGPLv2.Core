@@ -1,9 +1,9 @@
 <Project>
 
   <PropertyGroup>
-    <Version>1.7.5</Version>
-    <PackageVersion>1.7.5</PackageVersion>
-    <Authors>Vahid Nasiri;vla</Authors>
+    <Version>1.0.0</Version>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>vla</Authors>
     <Description>iTextSharp.LGPLv2.Core is an unofficial port of the last LGPL version of the iTextSharp (V4.1.6) to .NET Core.</Description>
     <Product>Bloom filters</Product>
     <PackageOutputPath>$(MSBuildThisFileDirectory)/artifacts</PackageOutputPath>

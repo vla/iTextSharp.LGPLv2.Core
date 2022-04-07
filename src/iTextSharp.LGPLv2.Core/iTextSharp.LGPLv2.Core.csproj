@@ -2,10 +2,11 @@
 	<PropertyGroup>
 		<AssemblyName>iTextSharp.LGPLv2.Core</AssemblyName>
 		<AssemblyTitle>iTextSharp.LGPLv2.Core</AssemblyTitle>
-		<PackageId>iTextSharp.LGPLv2.Core.Light</PackageId>
+		<PackageId>Es.iTextSharp.LGPL</PackageId>
 		<TargetFrameworks>netstandard2.0;net452;net6.0</TargetFrameworks>
 		<NoWarn>$(NoWarn);1591;CA1416</NoWarn>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PackageLicenseUrl>http://www.gnu.org/licenses/old-licenses/lgpl-2.0-standalone.html</PackageLicenseUrl>
 	</PropertyGroup>
 	<ItemGroup>
 		<EmbeddedResource Include="iTextSharp\text\pdf\fonts\*.*;iTextSharp\text\pdf\fonts\cmaps\*.*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
