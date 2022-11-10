@@ -3,7 +3,7 @@
 		<AssemblyName>iTextSharp.LGPLv2.Core</AssemblyName>
 		<AssemblyTitle>iTextSharp.LGPLv2.Core</AssemblyTitle>
 		<PackageId>Es.iTextSharp.LGPL</PackageId>
-		<TargetFrameworks>netstandard2.0;net452;net6.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;net452;net6.0;net7.0</TargetFrameworks>
 		<NoWarn>$(NoWarn);1591;CA1416</NoWarn>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseUrl>http://www.gnu.org/licenses/old-licenses/lgpl-2.0-standalone.html</PackageLicenseUrl>
@@ -35,6 +35,11 @@
 		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.0" />
 		<PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+	</ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0" />
+		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
 	</ItemGroup>
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<DefineConstants>$(DefineConstants);NETCORE;NETSTANDARD;NETSTANDARD2_0;</DefineConstants>
