@@ -2,7 +2,7 @@ set artifacts=%~dp0artifacts
 
 if exist %artifacts%  rd /q /s %artifacts%
 
-set ver=1.7.5
+set /p ver=<VERSION
 
 dotnet restore src/iTextSharp.LGPLv2.Core
 

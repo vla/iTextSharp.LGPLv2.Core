@@ -3,55 +3,51 @@
 		<AssemblyName>iTextSharp.LGPLv2.Core</AssemblyName>
 		<AssemblyTitle>iTextSharp.LGPLv2.Core</AssemblyTitle>
 		<PackageId>Es.iTextSharp.LGPL</PackageId>
-		<TargetFrameworks>netstandard2.0;net452;net6.0;net7.0</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+		<TargetFrameworks>netstandard2.0;net462;</TargetFrameworks>
 		<NoWarn>$(NoWarn);1591;CA1416</NoWarn>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseUrl>http://www.gnu.org/licenses/old-licenses/lgpl-2.0-standalone.html</PackageLicenseUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 	<ItemGroup>
-		<EmbeddedResource Include="iTextSharp\text\pdf\fonts\*.*;iTextSharp\text\pdf\fonts\cmaps\*.*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
+		<PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
-	
-	<PropertyGroup Condition=" '$(Configuration)' != 'Debug' ">
-		<Optimize>true</Optimize>
-	</PropertyGroup>
-
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+		<AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="Properties/BannedSymbols.txt"/>
+		<EmbeddedResource Include="iTextSharp\text\pdf\fonts\*.*;iTextSharp\text\pdf\fonts\cmaps\*.*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)"/>
+	</ItemGroup>
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<PlatformTarget>anycpu</PlatformTarget>
+	</PropertyGroup>
+	<ItemGroup>
+		<Using Include="System.Globalization"/>
+		<Using Include="System.IO"/>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="SkiaSharp" Version="2.88.3"/>
+		<PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1"/>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
 	</ItemGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-		<PackageReference Include="System.Drawing.Common" Version="5.0.1" />
-		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-		<PackageReference Include="System.Collections.NonGeneric" Version="4.3.0" />
-		<PackageReference Include="System.Net.Requests" Version="4.3.0" />
-		<PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0" />
-		<PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-		<PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.1" />
-		<PackageReference Include="System.Xml.ReaderWriter" Version="4.3.1" />
-		<PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
-	</ItemGroup>
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.0" />
-		<PackageReference Include="System.Drawing.Common" Version="6.0.0" />
-	</ItemGroup>
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0" />
-		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+		<PackageReference Include="System.Collections.NonGeneric" Version="4.3.0"/>
+		<PackageReference Include="System.Net.Requests" Version="4.3.0"/>
+		<PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0"/>
+		<PackageReference Include="System.Runtime.Loader" Version="4.3.0"/>
+		<PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.1"/>
+		<PackageReference Include="System.Xml.ReaderWriter" Version="4.3.1"/>
+		<PackageReference Include="System.Xml.XmlDocument" Version="4.3.0"/>
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0"/>
 	</ItemGroup>
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<DefineConstants>$(DefineConstants);NETCORE;NETSTANDARD;NETSTANDARD2_0;</DefineConstants>
+		<DefineConstants>NETSTANDARD2_0</DefineConstants>
 	</PropertyGroup>
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
-		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-	</ItemGroup>
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net452'">
-		<DefineConstants>$(DefineConstants);NET40</DefineConstants>
-	</PropertyGroup>
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-		<DefineConstants>$(DefineConstants);NETCORE;NET6_0;NET6_0_OR_GREATER</DefineConstants>
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net462'">
+		<DefineConstants>NET40</DefineConstants>
 	</PropertyGroup>
 
 </Project>
