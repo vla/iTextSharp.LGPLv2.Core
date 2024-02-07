@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
@@ -26,7 +26,6 @@ public class Issue34
 
         // STSong-Light requires this language pack http://ardownload.adobe.com/pub/adobe/reader/win/AcrobatDC/misc/FontPack1900820071_XtdAlf_Lang_DC.msi
         var baseFont = BaseFont.CreateFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
-
         var font = new Font(baseFont, 12);
 
         pdfDoc.Add(new Paragraph(font.BaseFont.PostscriptFontName, font));

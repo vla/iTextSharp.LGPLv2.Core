@@ -13,7 +13,7 @@ internal class TrueTypeFont : BaseFont
     /// <summary>
     ///     The code pages possible for a True Type font.
     /// </summary>
-    internal static string[] CodePages =
+    internal static readonly string[] CodePages =
     {
         "1252 Latin 1",
         "1250 Latin 2: Eastern Europe",
@@ -150,12 +150,12 @@ internal class TrueTypeFont : BaseFont
     /// <summary>
     ///     The content of table 'head'.
     /// </summary>
-    protected FontHeader Head = new();
+    protected readonly FontHeader Head = new();
 
     /// <summary>
     ///     The content of table 'hhea'.
     /// </summary>
-    protected HorizontalHeader Hhea = new();
+    protected readonly HorizontalHeader Hhea = new();
 
     /// <summary>
     ///     true  if all the glyphs have the same width.
@@ -169,7 +169,7 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     protected double ItalicAngle;
 
-    protected bool JustNames;
+    protected readonly bool JustNames;
 
     /// <summary>
     ///     The map containing the kerning information. It represents the content of
@@ -178,12 +178,12 @@ internal class TrueTypeFont : BaseFont
     ///     glyph number for the second character. The value is the amount of kerning in
     ///     normalized 1000 units as an  Integer . This value is usually negative.
     /// </summary>
-    protected NullValueDictionary<int, int> Kerning = new();
+    protected readonly NullValueDictionary<int, int> Kerning = new();
 
     /// <summary>
     ///     The content of table 'OS/2'.
     /// </summary>
-    protected WindowsMetrics Os2 = new();
+    protected readonly WindowsMetrics Os2 = new();
 
     /// <summary>
     ///     The file in use.
@@ -438,7 +438,7 @@ internal class TrueTypeFont : BaseFont
             case AWT_MAXADVANCE:
                 return fontSize * Hhea.AdvanceWidthMax / Head.UnitsPerEm;
             case UNDERLINE_POSITION:
-                return (UnderlinePosition - UnderlineThickness / 2) * fontSize / Head.UnitsPerEm;
+                return (UnderlinePosition - (float)UnderlineThickness / 2) * fontSize / Head.UnitsPerEm;
             case UNDERLINE_THICKNESS:
                 return UnderlineThickness * fontSize / Head.UnitsPerEm;
             case STRIKETHROUGH_POSITION:
@@ -1301,8 +1301,12 @@ internal class TrueTypeFont : BaseFont
                 byte[] b = null;
                 if (subsetp || DirectoryOffset != 0 || SubsetRanges != null)
                 {
-                    var sb = new TrueTypeFontSubSet(FileName, new RandomAccessFileOrArray(Rf), glyphs, DirectoryOffset,
-                                                    true, !subsetp);
+                    var sb = new TrueTypeFontSubSet(FileName,
+                                                    new RandomAccessFileOrArray(Rf),
+                                                    glyphs,
+                                                    DirectoryOffset,
+                                                    true,
+                                                    !subsetp);
                     b = sb.Process();
                 }
                 else
@@ -1478,8 +1482,11 @@ internal class TrueTypeFont : BaseFont
     /// <param name="shortTag">a 256 bytes long  byte  array where each unused byte is represented by 0</param>
     /// <param name="fontDescriptor">the indirect reference to a PdfDictionary containing the font descriptor or  null </param>
     /// <returns>the PdfDictionary containing the font dictionary</returns>
-    protected PdfDictionary GetFontBaseType(PdfIndirectReference fontDescriptor, string subsetPrefix, int firstChar,
-                                            int lastChar, byte[] shortTag)
+    protected PdfDictionary GetFontBaseType(PdfIndirectReference fontDescriptor,
+                                            string subsetPrefix,
+                                            int firstChar,
+                                            int lastChar,
+                                            byte[] shortTag)
     {
         var dic = new PdfDictionary(PdfName.Font);
         if (Cff)
@@ -1573,18 +1580,19 @@ internal class TrueTypeFont : BaseFont
     /// <param name="fontStream">the indirect reference to a PdfStream containing the font or  null </param>
     /// <param name="cidset"></param>
     /// <returns>the PdfDictionary containing the font descriptor or  null </returns>
-    protected PdfDictionary GetFontDescriptor(PdfIndirectReference fontStream, string subsetPrefix,
+    protected PdfDictionary GetFontDescriptor(PdfIndirectReference fontStream,
+                                              string subsetPrefix,
                                               PdfIndirectReference cidset)
     {
         var dic = new PdfDictionary(PdfName.Fontdescriptor);
         dic.Put(PdfName.Ascent, new PdfNumber(Os2.STypoAscender * 1000 / Head.UnitsPerEm));
         dic.Put(PdfName.Capheight, new PdfNumber(Os2.SCapHeight * 1000 / Head.UnitsPerEm));
         dic.Put(PdfName.Descent, new PdfNumber(Os2.STypoDescender * 1000 / Head.UnitsPerEm));
-        dic.Put(PdfName.Fontbbox, new PdfRectangle(
-                                                   Head.XMin * 1000 / Head.UnitsPerEm,
-                                                   Head.YMin * 1000 / Head.UnitsPerEm,
-                                                   Head.XMax * 1000 / Head.UnitsPerEm,
-                                                   Head.YMax * 1000 / Head.UnitsPerEm));
+        dic.Put(PdfName.Fontbbox,
+                new PdfRectangle((float)Head.XMin * 1000 / Head.UnitsPerEm,
+                                 (float)Head.YMin * 1000 / Head.UnitsPerEm,
+                                 (float)Head.XMax * 1000 / Head.UnitsPerEm,
+                                 (float)Head.YMax * 1000 / Head.UnitsPerEm));
         if (cidset != null)
         {
             dic.Put(PdfName.Cidset, cidset);
@@ -1935,7 +1943,7 @@ internal class TrueTypeFont : BaseFont
         /// <summary>
         ///     A variable.
         /// </summary>
-        internal byte[] AchVendId = new byte[4];
+        internal readonly byte[] AchVendId = new byte[4];
 
         /// <summary>
         ///     A variable.
@@ -1950,7 +1958,7 @@ internal class TrueTypeFont : BaseFont
         /// <summary>
         ///     A variable.
         /// </summary>
-        internal byte[] Panose = new byte[10];
+        internal readonly byte[] Panose = new byte[10];
 
         /// <summary>
         ///     A variable.

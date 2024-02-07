@@ -1,6 +1,7 @@
 using System.Net;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Ocsp;
+using Org.BouncyCastle.Asn1.Oiw;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Ocsp;
@@ -56,17 +57,16 @@ public class OcspClientBouncyCastle : IOcspClient
         con.Accept = "application/ocsp-response";
         con.Method = "POST";
 #if NET40
-            Stream outp = con.GetRequestStream();
+            using var outp = con.GetRequestStream();
 #else
-        var outp = con.GetRequestStreamAsync().Result;
+        using var outp = con.GetRequestStreamAsync().Result;
 #endif
         outp.Write(array, 0, array.Length);
-        outp.Dispose();
 
 #if NET40
             HttpWebResponse response = (HttpWebResponse)con.GetResponse();
 #else
-        var response = (HttpWebResponse)con.GetResponseAsync().GetAwaiter().GetResult();
+        using var response = (HttpWebResponse)con.GetResponseAsync().GetAwaiter().GetResult();
 #endif
 
         if (response.StatusCode != HttpStatusCode.OK)
@@ -74,13 +74,10 @@ public class OcspClientBouncyCastle : IOcspClient
             throw new IOException($"Invalid HTTP response: {(int)response.StatusCode}");
         }
 
-        var inp = response.GetResponseStream();
+        using var inp = response.GetResponseStream();
         var ocspResponse = new OcspResp(inp);
-        inp.Dispose();
 #if NET40
             response.Close();
-#else
-        response.Dispose();
 #endif
 
         if (ocspResponse.Status != 0)
@@ -124,7 +121,11 @@ public class OcspClientBouncyCastle : IOcspClient
     private static OcspReq generateOcspRequest(X509Certificate issuerCert, BigInteger serialNumber)
     {
         // Generate the id for the certificate we are looking for
-        var id = new CertificateID(CertificateID.HashSha1, issuerCert, serialNumber);
+
+        AlgorithmIdentifier digestAlgorithm = new AlgorithmIdentifier(
+                new DerObjectIdentifier(OiwObjectIdentifiers.IdSha1.Id), DerNull.Instance);
+
+        var id = new CertificateID(digestAlgorithm, issuerCert, serialNumber);
 
         // basic request generation with nonce
         var gen = new OcspReqGenerator();

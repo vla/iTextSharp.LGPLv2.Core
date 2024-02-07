@@ -77,17 +77,17 @@ public sealed class SimpleXmlParser
     /// <summary>
     ///     The handler to which we are going to forward comments.
     /// </summary>
-    internal ISimpleXmlDocHandlerComment comment;
+    internal readonly ISimpleXmlDocHandlerComment comment;
 
     /// <summary>
     ///     The handler to which we are going to forward document content
     /// </summary>
-    internal ISimpleXmlDocHandler Doc;
+    internal readonly ISimpleXmlDocHandler Doc;
 
     /// <summary>
     ///     current entity
     /// </summary>
-    internal StringBuilder entity = new();
+    internal readonly StringBuilder entity = new();
 
     /// <summary>
     ///     was the last character equivalent to a newline?
@@ -97,7 +97,7 @@ public sealed class SimpleXmlParser
     /// <summary>
     ///     Are we parsing HTML?
     /// </summary>
-    internal bool Html;
+    internal readonly bool Html;
 
     /// <summary>
     ///     the line we are currently reading
@@ -130,7 +130,7 @@ public sealed class SimpleXmlParser
     /// <summary>
     ///     the state stack
     /// </summary>
-    internal Stack<int> Stack;
+    internal readonly Stack<int> Stack;
 
     /// <summary>
     ///     the current state
@@ -145,7 +145,7 @@ public sealed class SimpleXmlParser
     /// <summary>
     ///     current text (whatever is encountered between tags)
     /// </summary>
-    internal StringBuilder text = new();
+    internal readonly StringBuilder text = new();
 
     /// <summary>
     ///     Creates a Simple XML parser object.
@@ -278,7 +278,7 @@ public sealed class SimpleXmlParser
         }
         else if (encoding.Equals("CP037", StringComparison.Ordinal))
         {
-            var bi = new MemoryStream();
+            using var bi = new MemoryStream();
             int c;
             while ((c = inp.ReadByte()) != -1)
             {
@@ -302,7 +302,8 @@ public sealed class SimpleXmlParser
             }
         }
 
-        Parse(doc, new StreamReader(inp, IanaEncodings.GetEncodingEncoding(encoding)));
+        using var streamReader = new StreamReader(inp, IanaEncodings.GetEncodingEncoding(encoding));
+        Parse(doc, streamReader);
     }
 
     public static void Parse(ISimpleXmlDocHandler doc, TextReader r)

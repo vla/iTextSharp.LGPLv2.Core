@@ -160,27 +160,26 @@ public class TsaClientBouncyCastle : ITsaClient
         }
 
 #if NET40
-            Stream outp = con.GetRequestStream();
+            using var outp = con.GetRequestStream();
 #else
-        var outp = con.GetRequestStreamAsync().Result;
+        using var outp = con.GetRequestStreamAsync().Result;
 #endif
         outp.Write(requestBytes, 0, requestBytes.Length);
-        outp.Dispose();
 
 #if NET40
             HttpWebResponse response = (HttpWebResponse)con.GetResponse();
 #else
-        var response = (HttpWebResponse)con.GetResponseAsync().GetAwaiter().GetResult();
+        using var response = (HttpWebResponse)con.GetResponseAsync().GetAwaiter().GetResult();
 #endif
         if (response.StatusCode != HttpStatusCode.OK)
         {
             throw new IOException("Invalid HTTP response: " + (int)response.StatusCode);
         }
 
-        var inp = response.GetResponseStream();
+        using var inp = response.GetResponseStream();
         var encoding = response.Headers["Content-Encoding"];
 
-        var baos = new MemoryStream();
+        using var baos = new MemoryStream();
         var buffer = new byte[1024];
         var bytesRead = 0;
         while ((bytesRead = inp.Read(buffer, 0, buffer.Length)) > 0)
@@ -188,11 +187,8 @@ public class TsaClientBouncyCastle : ITsaClient
             baos.Write(buffer, 0, bytesRead);
         }
 
-        inp.Dispose();
 #if NET40
             response.Close();
-#else
-        response.Dispose();
 #endif
 
         var respBytes = baos.ToArray();
