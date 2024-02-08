@@ -1100,10 +1100,10 @@ public class CffFontSubset : CffFont
     /// <returns>The number of hints in the subroutine read.</returns>
     protected int CalcHints(int begin, int end, int lBias, int gBias, int[] lSubrsOffsets)
     {
-        if (lSubrsOffsets == null)
-        {
-            throw new ArgumentNullException(nameof(lSubrsOffsets));
-        }
+        //if (lSubrsOffsets == null)
+        //{
+        //    throw new ArgumentNullException(nameof(lSubrsOffsets));
+        //}
 
         // Goto begining of the subr
         Seek(begin);
@@ -1456,10 +1456,10 @@ public class CffFontSubset : CffFont
             throw new ArgumentNullException(nameof(lSubr));
         }
 
-        if (lSubrsOffsets == null)
-        {
-            throw new ArgumentNullException(nameof(lSubrsOffsets));
-        }
+        //if (lSubrsOffsets == null)
+        //{
+        //    throw new ArgumentNullException(nameof(lSubrsOffsets));
+        //}
 
         // Clear the stack for the subrs
         EmptyStack();
