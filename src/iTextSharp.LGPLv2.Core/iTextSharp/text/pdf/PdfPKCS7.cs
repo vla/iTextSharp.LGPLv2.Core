@@ -35,28 +35,25 @@ public class PdfPkcs7
     private const string IdRsa = "1.2.840.113549.1.1.1";
     private const string IdSigningTime = "1.2.840.113549.1.9.5";
 
-    private static readonly INullValueDictionary<string, string> _algorithmNames =
-        new NullValueDictionary<string, string>();
+    private static readonly NullValueDictionary<string, string> _algorithmNames = new();
 
-    private static readonly INullValueDictionary<string, string> _allowedDigests =
-        new NullValueDictionary<string, string>();
+    private static readonly NullValueDictionary<string, string> _allowedDigests = new();
 
-    private static readonly INullValueDictionary<string, string> _digestNames =
-        new NullValueDictionary<string, string>();
+    private static readonly NullValueDictionary<string, string> _digestNames = new();
 
     private readonly List<X509Certificate> _certs;
     private readonly string _digestAlgorithm;
-    private readonly INullValueDictionary<string, object> _digestalgos = new NullValueDictionary<string, object>();
+    private readonly NullValueDictionary<string, object> _digestalgos = new();
     private readonly byte[] _digestAttr;
     private readonly IDigest _messageDigest;
+
+    private readonly ICipherParameters _privKey;
     private readonly ISigner _sig;
     private readonly byte[] _sigAttr;
     private byte[] _digest;
     private string _digestEncryptionAlgorithm;
     private byte[] _externalDigest;
     private byte[] _externalRsAdata;
-
-    private readonly ICipherParameters _privKey;
 
     private byte[] _rsAdata;
     private List<X509Certificate> _signCerts;
@@ -66,70 +63,70 @@ public class PdfPkcs7
 
     static PdfPkcs7()
     {
-        _digestNames["1.2.840.113549.2.5"] = "MD5";
-        _digestNames["1.2.840.113549.2.2"] = "MD2";
-        _digestNames["1.3.14.3.2.26"] = "SHA1";
-        _digestNames["2.16.840.1.101.3.4.2.4"] = "SHA224";
-        _digestNames["2.16.840.1.101.3.4.2.1"] = "SHA256";
-        _digestNames["2.16.840.1.101.3.4.2.2"] = "SHA384";
-        _digestNames["2.16.840.1.101.3.4.2.3"] = "SHA512";
-        _digestNames["1.3.36.3.2.2"] = "RIPEMD128";
-        _digestNames["1.3.36.3.2.1"] = "RIPEMD160";
-        _digestNames["1.3.36.3.2.3"] = "RIPEMD256";
-        _digestNames["1.2.840.113549.1.1.4"] = "MD5";
-        _digestNames["1.2.840.113549.1.1.2"] = "MD2";
-        _digestNames["1.2.840.113549.1.1.5"] = "SHA1";
-        _digestNames["1.2.840.113549.1.1.14"] = "SHA224";
-        _digestNames["1.2.840.113549.1.1.11"] = "SHA256";
-        _digestNames["1.2.840.113549.1.1.12"] = "SHA384";
-        _digestNames["1.2.840.113549.1.1.13"] = "SHA512";
-        _digestNames["1.2.840.113549.2.5"] = "MD5";
-        _digestNames["1.2.840.113549.2.2"] = "MD2";
-        _digestNames["1.2.840.10040.4.3"] = "SHA1";
-        _digestNames["2.16.840.1.101.3.4.3.1"] = "SHA224";
-        _digestNames["2.16.840.1.101.3.4.3.2"] = "SHA256";
-        _digestNames["2.16.840.1.101.3.4.3.3"] = "SHA384";
-        _digestNames["2.16.840.1.101.3.4.3.4"] = "SHA512";
-        _digestNames["1.3.36.3.3.1.3"] = "RIPEMD128";
-        _digestNames["1.3.36.3.3.1.2"] = "RIPEMD160";
-        _digestNames["1.3.36.3.3.1.4"] = "RIPEMD256";
+        _digestNames[key: "1.2.840.113549.2.5"] = "MD5";
+        _digestNames[key: "1.2.840.113549.2.2"] = "MD2";
+        _digestNames[key: "1.3.14.3.2.26"] = "SHA1";
+        _digestNames[key: "2.16.840.1.101.3.4.2.4"] = "SHA224";
+        _digestNames[key: "2.16.840.1.101.3.4.2.1"] = "SHA256";
+        _digestNames[key: "2.16.840.1.101.3.4.2.2"] = "SHA384";
+        _digestNames[key: "2.16.840.1.101.3.4.2.3"] = "SHA512";
+        _digestNames[key: "1.3.36.3.2.2"] = "RIPEMD128";
+        _digestNames[key: "1.3.36.3.2.1"] = "RIPEMD160";
+        _digestNames[key: "1.3.36.3.2.3"] = "RIPEMD256";
+        _digestNames[key: "1.2.840.113549.1.1.4"] = "MD5";
+        _digestNames[key: "1.2.840.113549.1.1.2"] = "MD2";
+        _digestNames[key: "1.2.840.113549.1.1.5"] = "SHA1";
+        _digestNames[key: "1.2.840.113549.1.1.14"] = "SHA224";
+        _digestNames[key: "1.2.840.113549.1.1.11"] = "SHA256";
+        _digestNames[key: "1.2.840.113549.1.1.12"] = "SHA384";
+        _digestNames[key: "1.2.840.113549.1.1.13"] = "SHA512";
+        _digestNames[key: "1.2.840.113549.2.5"] = "MD5";
+        _digestNames[key: "1.2.840.113549.2.2"] = "MD2";
+        _digestNames[key: "1.2.840.10040.4.3"] = "SHA1";
+        _digestNames[key: "2.16.840.1.101.3.4.3.1"] = "SHA224";
+        _digestNames[key: "2.16.840.1.101.3.4.3.2"] = "SHA256";
+        _digestNames[key: "2.16.840.1.101.3.4.3.3"] = "SHA384";
+        _digestNames[key: "2.16.840.1.101.3.4.3.4"] = "SHA512";
+        _digestNames[key: "1.3.36.3.3.1.3"] = "RIPEMD128";
+        _digestNames[key: "1.3.36.3.3.1.2"] = "RIPEMD160";
+        _digestNames[key: "1.3.36.3.3.1.4"] = "RIPEMD256";
 
-        _algorithmNames["1.2.840.113549.1.1.1"] = "RSA";
-        _algorithmNames["1.2.840.10040.4.1"] = "DSA";
-        _algorithmNames["1.2.840.113549.1.1.2"] = "RSA";
-        _algorithmNames["1.2.840.113549.1.1.4"] = "RSA";
-        _algorithmNames["1.2.840.113549.1.1.5"] = "RSA";
-        _algorithmNames["1.2.840.113549.1.1.14"] = "RSA";
-        _algorithmNames["1.2.840.113549.1.1.11"] = "RSA";
-        _algorithmNames["1.2.840.113549.1.1.12"] = "RSA";
-        _algorithmNames["1.2.840.113549.1.1.13"] = "RSA";
-        _algorithmNames["1.2.840.10040.4.3"] = "DSA";
-        _algorithmNames["2.16.840.1.101.3.4.3.1"] = "DSA";
-        _algorithmNames["2.16.840.1.101.3.4.3.2"] = "DSA";
-        _algorithmNames["1.3.36.3.3.1.3"] = "RSA";
-        _algorithmNames["1.3.36.3.3.1.2"] = "RSA";
-        _algorithmNames["1.3.36.3.3.1.4"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.1"] = "RSA";
+        _algorithmNames[key: "1.2.840.10040.4.1"] = "DSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.2"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.4"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.5"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.14"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.11"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.12"] = "RSA";
+        _algorithmNames[key: "1.2.840.113549.1.1.13"] = "RSA";
+        _algorithmNames[key: "1.2.840.10040.4.3"] = "DSA";
+        _algorithmNames[key: "2.16.840.1.101.3.4.3.1"] = "DSA";
+        _algorithmNames[key: "2.16.840.1.101.3.4.3.2"] = "DSA";
+        _algorithmNames[key: "1.3.36.3.3.1.3"] = "RSA";
+        _algorithmNames[key: "1.3.36.3.3.1.2"] = "RSA";
+        _algorithmNames[key: "1.3.36.3.3.1.4"] = "RSA";
 
-        _allowedDigests["MD5"] = "1.2.840.113549.2.5";
-        _allowedDigests["MD2"] = "1.2.840.113549.2.2";
-        _allowedDigests["SHA1"] = "1.3.14.3.2.26";
-        _allowedDigests["SHA224"] = "2.16.840.1.101.3.4.2.4";
-        _allowedDigests["SHA256"] = "2.16.840.1.101.3.4.2.1";
-        _allowedDigests["SHA384"] = "2.16.840.1.101.3.4.2.2";
-        _allowedDigests["SHA512"] = "2.16.840.1.101.3.4.2.3";
-        _allowedDigests["MD-5"] = "1.2.840.113549.2.5";
-        _allowedDigests["MD-2"] = "1.2.840.113549.2.2";
-        _allowedDigests["SHA-1"] = "1.3.14.3.2.26";
-        _allowedDigests["SHA-224"] = "2.16.840.1.101.3.4.2.4";
-        _allowedDigests["SHA-256"] = "2.16.840.1.101.3.4.2.1";
-        _allowedDigests["SHA-384"] = "2.16.840.1.101.3.4.2.2";
-        _allowedDigests["SHA-512"] = "2.16.840.1.101.3.4.2.3";
-        _allowedDigests["RIPEMD128"] = "1.3.36.3.2.2";
-        _allowedDigests["RIPEMD-128"] = "1.3.36.3.2.2";
-        _allowedDigests["RIPEMD160"] = "1.3.36.3.2.1";
-        _allowedDigests["RIPEMD-160"] = "1.3.36.3.2.1";
-        _allowedDigests["RIPEMD256"] = "1.3.36.3.2.3";
-        _allowedDigests["RIPEMD-256"] = "1.3.36.3.2.3";
+        _allowedDigests[key: "MD5"] = "1.2.840.113549.2.5";
+        _allowedDigests[key: "MD2"] = "1.2.840.113549.2.2";
+        _allowedDigests[key: "SHA1"] = "1.3.14.3.2.26";
+        _allowedDigests[key: "SHA224"] = "2.16.840.1.101.3.4.2.4";
+        _allowedDigests[key: "SHA256"] = "2.16.840.1.101.3.4.2.1";
+        _allowedDigests[key: "SHA384"] = "2.16.840.1.101.3.4.2.2";
+        _allowedDigests[key: "SHA512"] = "2.16.840.1.101.3.4.2.3";
+        _allowedDigests[key: "MD-5"] = "1.2.840.113549.2.5";
+        _allowedDigests[key: "MD-2"] = "1.2.840.113549.2.2";
+        _allowedDigests[key: "SHA-1"] = "1.3.14.3.2.26";
+        _allowedDigests[key: "SHA-224"] = "2.16.840.1.101.3.4.2.4";
+        _allowedDigests[key: "SHA-256"] = "2.16.840.1.101.3.4.2.1";
+        _allowedDigests[key: "SHA-384"] = "2.16.840.1.101.3.4.2.2";
+        _allowedDigests[key: "SHA-512"] = "2.16.840.1.101.3.4.2.3";
+        _allowedDigests[key: "RIPEMD128"] = "1.3.36.3.2.2";
+        _allowedDigests[key: "RIPEMD-128"] = "1.3.36.3.2.2";
+        _allowedDigests[key: "RIPEMD160"] = "1.3.36.3.2.1";
+        _allowedDigests[key: "RIPEMD-160"] = "1.3.36.3.2.1";
+        _allowedDigests[key: "RIPEMD256"] = "1.3.36.3.2.3";
+        _allowedDigests[key: "RIPEMD-256"] = "1.3.36.3.2.3";
     }
 
     /// <summary>
@@ -141,19 +138,20 @@ public class PdfPkcs7
     {
         var cf = new X509CertificateParser();
         _certs = new List<X509Certificate>();
+
         foreach (var cc in cf.ReadCertificates(certsKey))
         {
             _certs.Add(cc);
         }
 
         _signCerts = _certs;
-        SigningCertificate = _certs[0];
+        SigningCertificate = _certs[index: 0];
         CrLs = new List<object>();
         using var memoryStream = new MemoryStream(contentsKey);
         using var inp = new Asn1InputStream(memoryStream);
         _digest = ((DerOctetString)inp.ReadObject()).GetOctets();
-        _sig = SignerUtilities.GetSigner("SHA1withRSA");
-        _sig.Init(false, SigningCertificate.GetPublicKey());
+        _sig = SignerUtilities.GetSigner(algorithm: "SHA1withRSA");
+        _sig.Init(forSigning: false, SigningCertificate.GetPublicKey());
     }
 
     /// <summary>
@@ -183,21 +181,23 @@ public class PdfPkcs7
         }
         catch
         {
-            throw new ArgumentException("can't decode PKCS7SignedData object");
+            throw new ArgumentException(message: "can't decode PKCS7SignedData object");
         }
 
         if (pkcs is not Asn1Sequence signedData)
         {
-            throw new ArgumentException("Not a valid PKCS#7 object - not a sequence");
+            throw new ArgumentException(message: "Not a valid PKCS#7 object - not a sequence");
         }
 
-        var objId = (DerObjectIdentifier)signedData[0];
+        var objId = (DerObjectIdentifier)signedData[index: 0];
+
         if (!objId.Id.Equals(IdPkcs7SignedData, StringComparison.Ordinal))
         {
-            throw new ArgumentException("Not a valid PKCS#7 object - not signed data");
+            throw new ArgumentException(message: "Not a valid PKCS#7 object - not signed data");
         }
 
-        var content = (Asn1Sequence)((DerTaggedObject)signedData[1]).ToAsn1Object();
+        var content = (Asn1Sequence)((DerTaggedObject)signedData[index: 1]).GetBaseObject();
+
         // the positions that we care are:
         //     0 - version
         //     1 - digestAlgorithms
@@ -206,21 +206,23 @@ public class PdfPkcs7
         //     last - signerInfos
 
         // the version
-        Version = ((DerInteger)content[0]).Value.IntValue;
+        Version = ((DerInteger)content[index: 0]).Value.IntValue;
 
         // the digestAlgorithms
         _digestalgos = new NullValueDictionary<string, object>();
-        var e = ((Asn1Set)content[1]).GetEnumerator();
+        var e = ((Asn1Set)content[index: 1]).GetEnumerator();
+
         while (e.MoveNext())
         {
             var s = (Asn1Sequence)e.Current;
-            var o = (DerObjectIdentifier)s[0];
+            var o = (DerObjectIdentifier)s[index: 0];
             _digestalgos[o.Id] = null;
         }
 
         // the certificates and crls
         var cf = new X509CertificateParser();
         _certs = new List<X509Certificate>();
+
         foreach (var cc in cf.ReadCertificates(contentsKey))
         {
             _certs.Add(cc);
@@ -229,82 +231,93 @@ public class PdfPkcs7
         CrLs = new List<object>();
 
         // the possible ID_PKCS7_DATA
-        var rsaData = (Asn1Sequence)content[2];
+        var rsaData = (Asn1Sequence)content[index: 2];
+
         if (rsaData.Count > 1)
         {
-            var rsaDataContent = (DerOctetString)((DerTaggedObject)rsaData[1]).ToAsn1Object();
+            var rsaDataContent = (DerOctetString)((DerTaggedObject)rsaData[index: 1]).GetBaseObject();
             _rsAdata = rsaDataContent.GetOctets();
         }
 
         // the signerInfos
         var next = 3;
+
         while (content[next] is DerTaggedObject)
         {
             ++next;
         }
 
         var signerInfos = (Asn1Set)content[next];
+
         if (signerInfos.Count != 1)
         {
-            throw new
-                ArgumentException("This PKCS#7 object has multiple SignerInfos - only one is supported at this time");
+            throw new ArgumentException(
+                message: "This PKCS#7 object has multiple SignerInfos - only one is supported at this time");
         }
 
-        var signerInfo = (Asn1Sequence)signerInfos[0];
+        var signerInfo = (Asn1Sequence)signerInfos[index: 0];
+
         // the positions that we care are
         //     0 - version
         //     1 - the signing certificate serial number
         //     2 - the digest algorithm
         //     3 or 4 - digestEncryptionAlgorithm
         //     4 or 5 - encryptedDigest
-        SigningInfoVersion = ((DerInteger)signerInfo[0]).Value.IntValue;
+        SigningInfoVersion = ((DerInteger)signerInfo[index: 0]).Value.IntValue;
+
         // Get the signing certificate
-        var issuerAndSerialNumber = (Asn1Sequence)signerInfo[1];
-        var serialNumber = ((DerInteger)issuerAndSerialNumber[1]).Value;
+        var issuerAndSerialNumber = (Asn1Sequence)signerInfo[index: 1];
+        var serialNumber = ((DerInteger)issuerAndSerialNumber[index: 1]).Value;
+
         foreach (var cert in _certs)
         {
             if (serialNumber.Equals(cert.SerialNumber))
             {
                 SigningCertificate = cert;
+
                 break;
             }
         }
 
         if (SigningCertificate == null)
         {
-            throw new ArgumentException("Can't find signing certificate with serial " + serialNumber.ToString(16));
+            throw new ArgumentException(
+                "Can't find signing certificate with serial " + serialNumber.ToString(radix: 16));
         }
 
         calcSignCertificateChain();
-        _digestAlgorithm = ((DerObjectIdentifier)((Asn1Sequence)signerInfo[2])[0]).Id;
+        _digestAlgorithm = ((DerObjectIdentifier)((Asn1Sequence)signerInfo[index: 2])[index: 0]).Id;
         next = 3;
-        if (signerInfo[next] is Asn1TaggedObject)
+
+        if (signerInfo[next] is Asn1TaggedObject tagsig)
         {
-            var tagsig = (Asn1TaggedObject)signerInfo[next];
-            var sseq = Asn1Set.GetInstance(tagsig, false);
+            var sseq = Asn1Set.GetInstance(tagsig, declaredExplicit: false);
             _sigAttr = sseq.GetEncoded(Asn1Encodable.Der);
 
             for (var k = 0; k < sseq.Count; ++k)
             {
                 var seq2 = (Asn1Sequence)sseq[k];
-                if (((DerObjectIdentifier)seq2[0]).Id.Equals(IdMessageDigest, StringComparison.Ordinal))
+
+                if (((DerObjectIdentifier)seq2[index: 0]).Id.Equals(IdMessageDigest, StringComparison.Ordinal))
                 {
-                    var sset = (Asn1Set)seq2[1];
-                    _digestAttr = ((DerOctetString)sset[0]).GetOctets();
+                    var sset = (Asn1Set)seq2[index: 1];
+                    _digestAttr = ((DerOctetString)sset[index: 0]).GetOctets();
                 }
-                else if (((DerObjectIdentifier)seq2[0]).Id.Equals(IdAdbeRevocation, StringComparison.Ordinal))
+                else if (((DerObjectIdentifier)seq2[index: 0]).Id.Equals(IdAdbeRevocation, StringComparison.Ordinal))
                 {
-                    var setout = (Asn1Set)seq2[1];
-                    var seqout = (Asn1Sequence)setout[0];
+                    var setout = (Asn1Set)seq2[index: 1];
+                    var seqout = (Asn1Sequence)setout[index: 0];
+
                     for (var j = 0; j < seqout.Count; ++j)
                     {
                         var tg = (Asn1TaggedObject)seqout[j];
+
                         if (tg.TagNo != 1)
                         {
                             continue;
                         }
 
-                        var seqin = (Asn1Sequence)tg.ToAsn1Object();
+                        var seqin = (Asn1Sequence)tg.GetBaseObject();
                         findOcsp(seqin);
                     }
                 }
@@ -312,24 +325,25 @@ public class PdfPkcs7
 
             if (_digestAttr == null)
             {
-                throw new ArgumentException("Authenticated attribute is missing the digest.");
+                throw new ArgumentException(message: "Authenticated attribute is missing the digest.");
             }
 
             ++next;
         }
 
-        _digestEncryptionAlgorithm = ((DerObjectIdentifier)((Asn1Sequence)signerInfo[next++])[0]).Id;
+        _digestEncryptionAlgorithm = ((DerObjectIdentifier)((Asn1Sequence)signerInfo[next++])[index: 0]).Id;
         _digest = ((DerOctetString)signerInfo[next++]).GetOctets();
-        if (next < signerInfo.Count && signerInfo[next] is DerTaggedObject)
+
+        if (next < signerInfo.Count && signerInfo[next] is DerTaggedObject taggedObject)
         {
-            var taggedObject = (DerTaggedObject)signerInfo[next];
-            var unat = Asn1Set.GetInstance(taggedObject, false);
+            var unat = Asn1Set.GetInstance(taggedObject, declaredExplicit: false);
             var attble = new AttributeTable(unat);
             var ts = attble[PkcsObjectIdentifiers.IdAASignatureTimeStampToken];
+
             if (ts != null)
             {
                 var attributeValues = ts.AttrValues;
-                var tokenSequence = Asn1Sequence.GetInstance(attributeValues[0]);
+                var tokenSequence = Asn1Sequence.GetInstance(attributeValues[index: 0]);
                 var contentInfo = ContentInfo.GetInstance(tokenSequence);
                 TimeStampToken = new TimeStampToken(contentInfo);
             }
@@ -341,7 +355,7 @@ public class PdfPkcs7
         }
 
         _sig = SignerUtilities.GetSigner(GetDigestAlgorithm());
-        _sig.Init(false, SigningCertificate.GetPublicKey());
+        _sig.Init(forSigning: false, SigningCertificate.GetPublicKey());
     }
 
     /// <summary>
@@ -357,10 +371,10 @@ public class PdfPkcs7
     /// <param name="hashAlgorithm">the hash algorithm</param>
     /// <param name="hasRsAdata"> true  if the sub-filter is adbe.pkcs7.sha1</param>
     public PdfPkcs7(ICipherParameters privKey,
-                    X509Certificate[] certChain,
-                    object[] crlList,
-                    string hashAlgorithm,
-                    bool hasRsAdata)
+        X509Certificate[] certChain,
+        object[] crlList,
+        string hashAlgorithm,
+        bool hasRsAdata)
     {
         if (certChain == null)
         {
@@ -375,6 +389,7 @@ public class PdfPkcs7
         _privKey = privKey;
 
         _digestAlgorithm = _allowedDigests[hashAlgorithm.ToUpper(CultureInfo.InvariantCulture)];
+
         if (_digestAlgorithm == null)
         {
             throw new ArgumentException("Unknown Hash Algorithm " + hashAlgorithm);
@@ -390,6 +405,7 @@ public class PdfPkcs7
         // Copy in the certificates and crls used to sign the private key.
         //
         SigningCertificate = certChain[0];
+
         for (var i = 0; i < certChain.Length; i++)
         {
             _certs.Add(certChain[i]);
@@ -429,7 +445,7 @@ public class PdfPkcs7
         if (privKey != null)
         {
             _sig = SignerUtilities.GetSigner(GetDigestAlgorithm());
-            _sig.Init(true, privKey);
+            _sig.Init(forSigning: true, privKey);
         }
     }
 
@@ -444,6 +460,7 @@ public class PdfPkcs7
         {
             var c = new X509Certificate[_certs.Count];
             _certs.CopyTo(c);
+
             return c;
         }
     }
@@ -484,6 +501,7 @@ public class PdfPkcs7
         {
             var ret = new X509Certificate[_signCerts.Count];
             _signCerts.CopyTo(ret);
+
             return ret;
         }
     }
@@ -550,6 +568,7 @@ public class PdfPkcs7
     public static string GetAlgorithm(string oid)
     {
         var ret = _algorithmNames[oid];
+
         if (ret == null)
         {
             return oid;
@@ -567,6 +586,7 @@ public class PdfPkcs7
     public static string GetDigest(string oid)
     {
         var ret = _digestNames[oid];
+
         if (ret == null)
         {
             return oid;
@@ -607,25 +627,29 @@ public class PdfPkcs7
         try
         {
             var obj = getExtensionValue(certificate, X509Extensions.AuthorityInfoAccess.Id);
+
             if (obj == null)
             {
                 return null;
             }
 
             var accessDescriptions = (Asn1Sequence)obj;
+
             for (var i = 0; i < accessDescriptions.Count; i++)
             {
                 var accessDescription = (Asn1Sequence)accessDescriptions[i];
+
                 if (accessDescription.Count != 2)
                 {
                     continue;
                 }
 
-                if (accessDescription[0] is DerObjectIdentifier &&
-                    ((DerObjectIdentifier)accessDescription[0]).Id.Equals("1.3.6.1.5.5.7.48.1",
-                                                                          StringComparison.Ordinal))
+                if (accessDescription[index: 0] is DerObjectIdentifier &&
+                    ((DerObjectIdentifier)accessDescription[index: 0]).Id.Equals(value: "1.3.6.1.5.5.7.48.1",
+                        StringComparison.Ordinal))
                 {
-                    var accessLocation = getStringFromGeneralName((Asn1Object)accessDescription[1]);
+                    var accessLocation = getStringFromGeneralName((Asn1Object)accessDescription[index: 1]);
+
                     if (accessLocation == null)
                     {
                         return "";
@@ -698,9 +722,9 @@ public class PdfPkcs7
     /// <param name="calendar">the date or  null  for the current date</param>
     /// <returns> null  if the certificate chain could be validade or a</returns>
     public static object[] VerifyCertificates(X509Certificate[] certs,
-                                              IList<X509Certificate> keystore,
-                                              object[] crls,
-                                              DateTime calendar)
+        IList<X509Certificate> keystore,
+        object[] crls,
+        DateTime calendar)
     {
         if (certs == null)
         {
@@ -716,9 +740,13 @@ public class PdfPkcs7
         {
             var cert = certs[k];
             var err = VerifyCertificate(cert, crls, calendar);
+
             if (err != null)
             {
-                return new object[] { cert, err };
+                return new object[]
+                {
+                    cert, err
+                };
             }
 
             foreach (var certStoreX509 in keystore)
@@ -733,6 +761,7 @@ public class PdfPkcs7
                     try
                     {
                         cert.Verify(certStoreX509.GetPublicKey());
+
                         return null;
                     }
                     catch
@@ -745,6 +774,7 @@ public class PdfPkcs7
             }
 
             int j;
+
             for (j = 0; j < certs.Length; ++j)
             {
                 if (j == k)
@@ -753,9 +783,11 @@ public class PdfPkcs7
                 }
 
                 var certNext = certs[j];
+
                 try
                 {
                     cert.Verify(certNext.GetPublicKey());
+
                     break;
                 }
                 catch
@@ -765,11 +797,17 @@ public class PdfPkcs7
 
             if (j == certs.Length)
             {
-                return new object[] { cert, "Cannot be verified against the KeyStore or the certificate chain" };
+                return new object[]
+                {
+                    cert, "Cannot be verified against the KeyStore or the certificate chain"
+                };
             }
         }
 
-        return new object[] { null, "Invalid state. Possible circular certificate chain" };
+        return new object[]
+        {
+            null, "Invalid state. Possible circular certificate chain"
+        };
     }
 
     /// <summary>
@@ -854,6 +892,7 @@ public class PdfPkcs7
                 try
                 {
                     ts.Validate(certStoreX509);
+
                     return true;
                 }
                 catch
@@ -892,8 +931,8 @@ public class PdfPkcs7
     /// <param name="signingTime">the signing time</param>
     /// <param name="ocsp"></param>
     /// <returns>the byte array representation of the authenticatedAttributes ready to be signed</returns>
-    public static byte[] GetAuthenticatedAttributeBytes(byte[] secondDigest, DateTime signingTime, byte[] ocsp) =>
-        getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp).GetEncoded(Asn1Encodable.Der);
+    public static byte[] GetAuthenticatedAttributeBytes(byte[] secondDigest, DateTime signingTime, byte[] ocsp)
+        => getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp).GetEncoded(Asn1Encodable.Der);
 
     /// <summary>
     ///     Get the algorithm used to calculate the message digest
@@ -902,6 +941,7 @@ public class PdfPkcs7
     public string GetDigestAlgorithm()
     {
         var dea = GetAlgorithm(_digestEncryptionAlgorithm);
+
         if (dea == null)
         {
             dea = _digestEncryptionAlgorithm;
@@ -929,6 +969,7 @@ public class PdfPkcs7
         using var dout = Asn1OutputStream.Create(bOut);
         dout.WriteObject(new DerOctetString(_digest));
         dout.Dispose();
+
         return bOut.ToArray();
     }
 
@@ -936,7 +977,7 @@ public class PdfPkcs7
     ///     Gets the bytes for the PKCS7SignedData object.
     /// </summary>
     /// <returns>the bytes for the PKCS7SignedData object</returns>
-    public byte[] GetEncodedPkcs7() => GetEncodedPkcs7(null, DateTime.Now, null, null);
+    public byte[] GetEncodedPkcs7() => GetEncodedPkcs7(secondDigest: null, DateTime.Now, tsaClient: null, ocsp: null);
 
     /// <summary>
     ///     Gets the bytes for the PKCS7SignedData object. Optionally the authenticatedAttributes
@@ -945,8 +986,8 @@ public class PdfPkcs7
     /// <param name="secondDigest">the digest in the authenticatedAttributes</param>
     /// <param name="signingTime">the signing time in the authenticatedAttributes</param>
     /// <returns>the bytes for the PKCS7SignedData object</returns>
-    public byte[] GetEncodedPkcs7(byte[] secondDigest, DateTime signingTime) =>
-        GetEncodedPkcs7(secondDigest, signingTime, null, null);
+    public byte[] GetEncodedPkcs7(byte[] secondDigest, DateTime signingTime)
+        => GetEncodedPkcs7(secondDigest, signingTime, tsaClient: null, ocsp: null);
 
     /// <summary>
     ///     Gets the bytes for the PKCS7SignedData object. Optionally the authenticatedAttributes
@@ -964,6 +1005,7 @@ public class PdfPkcs7
         if (_externalDigest != null)
         {
             _digest = _externalDigest;
+
             if (_rsAdata != null)
             {
                 _rsAdata = _externalRsAdata;
@@ -972,7 +1014,7 @@ public class PdfPkcs7
         else if (_externalRsAdata != null && _rsAdata != null)
         {
             _rsAdata = _externalRsAdata;
-            _sig.BlockUpdate(_rsAdata, 0, _rsAdata.Length);
+            _sig.BlockUpdate(_rsAdata, inOff: 0, _rsAdata.Length);
             _digest = _sig.GenerateSignature();
         }
         else
@@ -980,8 +1022,8 @@ public class PdfPkcs7
             if (_rsAdata != null)
             {
                 _rsAdata = new byte[_messageDigest.GetDigestSize()];
-                _messageDigest.DoFinal(_rsAdata, 0);
-                _sig.BlockUpdate(_rsAdata, 0, _rsAdata.Length);
+                _messageDigest.DoFinal(_rsAdata, outOff: 0);
+                _sig.BlockUpdate(_rsAdata, inOff: 0, _rsAdata.Length);
             }
 
             _digest = _sig.GenerateSignature();
@@ -989,6 +1031,7 @@ public class PdfPkcs7
 
         // Create the set of Hash algorithms
         var digestAlgorithms = new Asn1EncodableVector();
+
         foreach (var dal in _digestalgos.Keys)
         {
             var algos = new Asn1EncodableVector();
@@ -1000,9 +1043,10 @@ public class PdfPkcs7
         // Create the contentInfo.
         var v = new Asn1EncodableVector();
         v.Add(new DerObjectIdentifier(IdPkcs7Data));
+
         if (_rsAdata != null)
         {
-            v.Add(new DerTaggedObject(0, new DerOctetString(_rsAdata)));
+            v.Add(new DerTaggedObject(tagNo: 0, new DerOctetString(_rsAdata)));
         }
 
         var contentinfo = new DerSequence(v);
@@ -1010,6 +1054,7 @@ public class PdfPkcs7
         // Get all the certificates
         //
         v = new Asn1EncodableVector();
+
         foreach (var xcert in _certs)
         {
             using var memoryStream = new MemoryStream(xcert.GetEncoded());
@@ -1041,9 +1086,8 @@ public class PdfPkcs7
         // add the authenticated attribute if present
         if (secondDigest != null /*&& signingTime != null*/)
         {
-            signerinfo.Add(new DerTaggedObject(false,
-                                               0,
-                                               getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp)));
+            signerinfo.Add(new DerTaggedObject(isExplicit: false, tagNo: 0,
+                getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp)));
         }
 
         // Add the digestEncryptionAlgorithm
@@ -1063,12 +1107,14 @@ public class PdfPkcs7
             using var sha1 = SHA1.Create();
             var tsImprint = sha1.ComputeHash(_digest);
             var tsToken = tsaClient.GetTimeStampToken(this, tsImprint);
+
             if (tsToken != null)
             {
                 var unauthAttributes = buildUnauthenticatedAttributes(tsToken);
+
                 if (unauthAttributes != null)
                 {
-                    signerinfo.Add(new DerTaggedObject(false, 1, new DerSet(unauthAttributes)));
+                    signerinfo.Add(new DerTaggedObject(isExplicit: false, tagNo: 1, new DerSet(unauthAttributes)));
                 }
             }
         }
@@ -1078,7 +1124,7 @@ public class PdfPkcs7
         body.Add(new DerInteger(Version));
         body.Add(new DerSet(digestAlgorithms));
         body.Add(contentinfo);
-        body.Add(new DerTaggedObject(false, 0, dercertificates));
+        body.Add(new DerTaggedObject(isExplicit: false, tagNo: 0, dercertificates));
 
         //                if (crls.Count > 0) {
         //                    v = new Asn1EncodableVector();
@@ -1098,11 +1144,12 @@ public class PdfPkcs7
         //
         var whole = new Asn1EncodableVector();
         whole.Add(new DerObjectIdentifier(IdPkcs7SignedData));
-        whole.Add(new DerTaggedObject(0, new DerSequence(body)));
+        whole.Add(new DerTaggedObject(tagNo: 0, new DerSequence(body)));
 
         using var bOut = new MemoryStream();
         using var dout = Asn1OutputStream.Create(bOut);
         dout.WriteObject(new DerSequence(whole));
+
         return bOut.ToArray();
     }
 
@@ -1137,9 +1184,10 @@ public class PdfPkcs7
             var sigcer = SigningCertificate;
             var isscer = cs[1];
 
-            AlgorithmIdentifier digestAlgorithm = new AlgorithmIdentifier(
-                new DerObjectIdentifier(OiwObjectIdentifiers.IdSha1.Id), DerNull.Instance);
-            var tis = new CertificateID(digestAlgorithm, isscer, sigcer.SerialNumber);
+            var tis = new CertificateID(
+                new AlgorithmIdentifier(new DerObjectIdentifier(OiwObjectIdentifiers.IdSha1.Id), DerNull.Instance),
+                isscer, sigcer.SerialNumber);
+
             return tis.Equals(cid);
         }
         catch
@@ -1161,13 +1209,14 @@ public class PdfPkcs7
     {
         _externalDigest = digest;
         _externalRsAdata = rsAdata;
+
         if (digestEncryptionAlgorithm != null)
         {
-            if (digestEncryptionAlgorithm.Equals("RSA", StringComparison.Ordinal))
+            if (digestEncryptionAlgorithm.Equals(value: "RSA", StringComparison.Ordinal))
             {
                 _digestEncryptionAlgorithm = IdRsa;
             }
-            else if (digestEncryptionAlgorithm.Equals("DSA", StringComparison.Ordinal))
+            else if (digestEncryptionAlgorithm.Equals(value: "DSA", StringComparison.Ordinal))
             {
                 _digestEncryptionAlgorithm = IdDsa;
             }
@@ -1212,14 +1261,15 @@ public class PdfPkcs7
         if (_sigAttr != null)
         {
             var msd = new byte[_messageDigest.GetDigestSize()];
-            _sig.BlockUpdate(_sigAttr, 0, _sigAttr.Length);
+            _sig.BlockUpdate(_sigAttr, inOff: 0, _sigAttr.Length);
+
             if (_rsAdata != null)
             {
-                _messageDigest.DoFinal(msd, 0);
-                _messageDigest.BlockUpdate(msd, 0, msd.Length);
+                _messageDigest.DoFinal(msd, outOff: 0);
+                _messageDigest.BlockUpdate(msd, inOff: 0, msd.Length);
             }
 
-            _messageDigest.DoFinal(msd, 0);
+            _messageDigest.DoFinal(msd, outOff: 0);
             _verifyResult = Arrays.AreEqual(msd, _digestAttr) && _sig.VerifySignature(_digest);
         }
         else
@@ -1227,14 +1277,15 @@ public class PdfPkcs7
             if (_rsAdata != null)
             {
                 var msd = new byte[_messageDigest.GetDigestSize()];
-                _messageDigest.DoFinal(msd, 0);
-                _sig.BlockUpdate(msd, 0, msd.Length);
+                _messageDigest.DoFinal(msd, outOff: 0);
+                _sig.BlockUpdate(msd, inOff: 0, msd.Length);
             }
 
             _verifyResult = _sig.VerifySignature(_digest);
         }
 
         _verified = true;
+
         return _verifyResult;
     }
 
@@ -1255,6 +1306,7 @@ public class PdfPkcs7
         var md = SHA1.Create().ComputeHash(_digest);
         var imphashed = imprint.GetHashedMessage();
         var res = Arrays.AreEqual(md, imphashed);
+
         return res;
     }
 
@@ -1263,6 +1315,7 @@ public class PdfPkcs7
     private static Asn1Object getExtensionValue(X509Certificate cert, string oid)
     {
         var bytes = cert.GetExtensionValue(new DerObjectIdentifier(oid)).GetDerEncoded();
+
         if (bytes == null)
         {
             return null;
@@ -1272,6 +1325,7 @@ public class PdfPkcs7
         using var aIn = new Asn1InputStream(memoryStream);
         var octs = (Asn1OctetString)aIn.ReadObject();
         using var ain = new Asn1InputStream(new MemoryStream(octs.GetOctets()));
+
         return ain.ReadObject();
     }
 
@@ -1285,14 +1339,16 @@ public class PdfPkcs7
         using var memoryStream = new MemoryStream(enc);
         using var inp = new Asn1InputStream(memoryStream);
         var seq = (Asn1Sequence)inp.ReadObject();
-        return (Asn1Object)seq[seq[0] is DerTaggedObject ? 3 : 2];
+
+        return (Asn1Object)seq[seq[index: 0] is DerTaggedObject ? 3 : 2];
     }
 
     private static string getStringFromGeneralName(Asn1Object names)
     {
         var taggedObject = (DerTaggedObject)names;
-        return EncodingsRegistry.GetEncoding(1252)
-                                .GetString(Asn1OctetString.GetInstance(taggedObject, false).GetOctets());
+
+        return EncodingsRegistry.GetEncoding(codepage: 1252)
+            .GetString(Asn1OctetString.GetInstance(taggedObject, declaredExplicit: false).GetOctets());
     }
 
     /// <summary>
@@ -1305,7 +1361,8 @@ public class PdfPkcs7
         using var memoryStream = new MemoryStream(enc);
         using var inp = new Asn1InputStream(memoryStream);
         var seq = (Asn1Sequence)inp.ReadObject();
-        return (Asn1Object)seq[seq[0] is DerTaggedObject ? 5 : 4];
+
+        return (Asn1Object)seq[seq[index: 0] is DerTaggedObject ? 5 : 4];
     }
 
     /// <summary>
@@ -1337,6 +1394,7 @@ public class PdfPkcs7
         v.Add(new DerSet(seq));
 
         unauthAttributes.Add(new DerSequence(v));
+
         return unauthAttributes;
     }
 
@@ -1345,6 +1403,7 @@ public class PdfPkcs7
         var cc = new List<X509Certificate>();
         cc.Add(SigningCertificate);
         var oc = new List<X509Certificate>(_certs);
+
         for (var k = 0; k < oc.Count; ++k)
         {
             if (SigningCertificate.SerialNumber.Equals(oc[k].SerialNumber))
@@ -1355,10 +1414,12 @@ public class PdfPkcs7
         }
 
         var found = true;
+
         while (found)
         {
             var v = cc[cc.Count - 1];
             found = false;
+
             for (var k = 0; k < oc.Count; ++k)
             {
                 try
@@ -1367,6 +1428,7 @@ public class PdfPkcs7
                     found = true;
                     cc.Add(oc[k]);
                     oc.RemoveAt(k);
+
                     break;
                 }
                 catch
@@ -1382,32 +1444,37 @@ public class PdfPkcs7
     {
         Ocsp = null;
         var ret = false;
+
         while (true)
         {
-            if (seq[0] is DerObjectIdentifier
-                && ((DerObjectIdentifier)seq[0]).Id.Equals(OcspObjectIdentifiers.PkixOcspBasic.Id,
-                                                           StringComparison.Ordinal))
+            if (seq[index: 0] is DerObjectIdentifier &&
+                ((DerObjectIdentifier)seq[index: 0]).Id.Equals(OcspObjectIdentifiers.PkixOcspBasic.Id,
+                    StringComparison.Ordinal))
             {
                 break;
             }
 
             ret = true;
+
             for (var k = 0; k < seq.Count; ++k)
             {
                 if (seq[k] is Asn1Sequence)
                 {
-                    seq = (Asn1Sequence)seq[0];
+                    seq = (Asn1Sequence)seq[index: 0];
                     ret = false;
+
                     break;
                 }
 
-                if (seq[k] is Asn1TaggedObject)
+                if (seq[k] is Asn1TaggedObject tag)
                 {
-                    var tag = (Asn1TaggedObject)seq[k];
-                    if (tag.ToAsn1Object() is Asn1Sequence)
+                    var asn1Object = tag.GetBaseObject();
+
+                    if (asn1Object is Asn1Sequence sequence)
                     {
-                        seq = (Asn1Sequence)tag.ToAsn1Object();
+                        seq = sequence;
                         ret = false;
+
                         break;
                     }
 
@@ -1421,7 +1488,7 @@ public class PdfPkcs7
             }
         }
 
-        var os = (DerOctetString)seq[1];
+        var os = (DerOctetString)seq[index: 1];
         using var inp = new Asn1InputStream(os.GetOctets());
         var resp = BasicOcspResponse.GetInstance(inp.ReadObject());
         Ocsp = new BasicOcspResp(resp);
@@ -1442,6 +1509,7 @@ public class PdfPkcs7
         v.Add(new DerObjectIdentifier(IdMessageDigest));
         v.Add(new DerSet(new DerOctetString(secondDigest)));
         attribute.Add(new DerSequence(v));
+
         if (ocsp != null)
         {
             v = new Asn1EncodableVector();
@@ -1451,12 +1519,12 @@ public class PdfPkcs7
             var v2 = new Asn1EncodableVector();
             v2.Add(OcspObjectIdentifiers.PkixOcspBasic);
             v2.Add(doctet);
-            var den = new DerEnumerated(0);
+            var den = new DerEnumerated(val: 0);
             var v3 = new Asn1EncodableVector();
             v3.Add(den);
-            v3.Add(new DerTaggedObject(true, 0, new DerSequence(v2)));
+            v3.Add(new DerTaggedObject(isExplicit: true, tagNo: 0, new DerSequence(v2)));
             vo1.Add(new DerSequence(v3));
-            v.Add(new DerSet(new DerSequence(new DerTaggedObject(true, 1, new DerSequence(vo1)))));
+            v.Add(new DerSet(new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(vo1)))));
             attribute.Add(new DerSequence(v));
         }
 
@@ -1471,17 +1539,17 @@ public class PdfPkcs7
         /// <summary>
         ///     country code - StringType(SIZE(2))
         /// </summary>
-        public static DerObjectIdentifier C = new("2.5.4.6");
+        public static DerObjectIdentifier C = new(identifier: "2.5.4.6");
 
         /// <summary>
         ///     common name - StringType(SIZE(1..64))
         /// </summary>
-        public static DerObjectIdentifier Cn = new("2.5.4.3");
+        public static DerObjectIdentifier Cn = new(identifier: "2.5.4.3");
 
         /// <summary>
         ///     object identifier
         /// </summary>
-        public static DerObjectIdentifier Dc = new("0.9.2342.19200300.100.1.25");
+        public static DerObjectIdentifier Dc = new(identifier: "0.9.2342.19200300.100.1.25");
 
         /// <summary>
         ///     A Hashtable with default symbols
@@ -1492,73 +1560,73 @@ public class PdfPkcs7
         /// <summary>
         ///     email address in Verisign certificates
         /// </summary>
-        public static DerObjectIdentifier E = new("1.2.840.113549.1.9.1");
+        public static DerObjectIdentifier E = new(identifier: "1.2.840.113549.1.9.1");
 
         /// <summary>
         ///     Email address (RSA PKCS#9 extension) - IA5String.
         ///     Note: if you're trying to be ultra orthodox, don't use this! It shouldn't be in here.
         /// </summary>
-        public static DerObjectIdentifier EmailAddress = new("1.2.840.113549.1.9.1");
+        public static DerObjectIdentifier EmailAddress = new(identifier: "1.2.840.113549.1.9.1");
 
         /// <summary>
         ///     Naming attribute of type X520name
         /// </summary>
-        public static DerObjectIdentifier Generation = new("2.5.4.44");
+        public static DerObjectIdentifier Generation = new(identifier: "2.5.4.44");
 
         /// <summary>
         ///     Naming attribute of type X520name
         /// </summary>
-        public static DerObjectIdentifier Givenname = new("2.5.4.42");
+        public static DerObjectIdentifier Givenname = new(identifier: "2.5.4.42");
 
         /// <summary>
         ///     Naming attribute of type X520name
         /// </summary>
-        public static DerObjectIdentifier Initials = new("2.5.4.43");
+        public static DerObjectIdentifier Initials = new(identifier: "2.5.4.43");
 
         /// <summary>
         ///     locality name - StringType(SIZE(1..64))
         /// </summary>
-        public static DerObjectIdentifier L = new("2.5.4.7");
+        public static DerObjectIdentifier L = new(identifier: "2.5.4.7");
 
         /// <summary>
         ///     organization - StringType(SIZE(1..64))
         /// </summary>
-        public static DerObjectIdentifier O = new("2.5.4.10");
+        public static DerObjectIdentifier O = new(identifier: "2.5.4.10");
 
         /// <summary>
         ///     organizational unit name - StringType(SIZE(1..64))
         /// </summary>
-        public static DerObjectIdentifier Ou = new("2.5.4.11");
+        public static DerObjectIdentifier Ou = new(identifier: "2.5.4.11");
 
         /// <summary>
         ///     device serial number name - StringType(SIZE(1..64))
         /// </summary>
-        public static DerObjectIdentifier Sn = new("2.5.4.5");
+        public static DerObjectIdentifier Sn = new(identifier: "2.5.4.5");
 
         /// <summary>
         ///     state, or province name - StringType(SIZE(1..64))
         /// </summary>
-        public static DerObjectIdentifier St = new("2.5.4.8");
+        public static DerObjectIdentifier St = new(identifier: "2.5.4.8");
 
         /// <summary>
         ///     Naming attribute of type X520name
         /// </summary>
-        public static DerObjectIdentifier Surname = new("2.5.4.4");
+        public static DerObjectIdentifier Surname = new(identifier: "2.5.4.4");
 
         /// <summary>
         ///     Title
         /// </summary>
-        public static DerObjectIdentifier T = new("2.5.4.12");
+        public static DerObjectIdentifier T = new(identifier: "2.5.4.12");
 
         /// <summary>
         ///     LDAP User id.
         /// </summary>
-        public static DerObjectIdentifier Uid = new("0.9.2342.19200300.100.1.1");
+        public static DerObjectIdentifier Uid = new(identifier: "0.9.2342.19200300.100.1.1");
 
         /// <summary>
         ///     Naming attribute of type X520name
         /// </summary>
-        public static DerObjectIdentifier UniqueIdentifier = new("2.5.4.45");
+        public static DerObjectIdentifier UniqueIdentifier = new(identifier: "2.5.4.45");
 
         /// <summary>
         ///     A Hashtable with values
@@ -1604,20 +1672,22 @@ public class PdfPkcs7
                 for (var i = 0; i < sett.Count; i++)
                 {
                     var s = (Asn1Sequence)sett[i];
-                    var id = DefaultSymbols[s[0]];
+                    var id = DefaultSymbols[s[index: 0]];
+
                     if (id == null)
                     {
                         continue;
                     }
 
                     var vs = Values[id];
+
                     if (vs == null)
                     {
                         vs = new List<string>();
                         Values[id] = vs;
                     }
 
-                    vs.Add(((DerStringBase)s[1]).GetString());
+                    vs.Add(((DerStringBase)s[index: 1]).GetString());
                 }
             }
         }
@@ -1633,16 +1703,17 @@ public class PdfPkcs7
             while (nTok.HasMoreTokens())
             {
                 var token = nTok.NextToken();
-                var index = token.IndexOf("=", StringComparison.Ordinal);
+                var index = token.IndexOf(value: "=", StringComparison.Ordinal);
 
                 if (index == -1)
                 {
-                    throw new ArgumentException("badly formated directory string");
+                    throw new ArgumentException(message: "badly formated directory string");
                 }
 
-                var id = token.Substring(0, index).ToUpper(CultureInfo.InvariantCulture);
+                var id = token.Substring(startIndex: 0, index).ToUpper(CultureInfo.InvariantCulture);
                 var value = token.Substring(index + 1);
                 var vs = Values[id];
+
                 if (vs == null)
                 {
                     vs = new List<string>();
@@ -1656,7 +1727,8 @@ public class PdfPkcs7
         public string GetField(string name)
         {
             var vs = Values[name];
-            return vs == null ? null : vs[0];
+
+            return vs == null ? null : vs[index: 0];
         }
 
         /// <summary>
@@ -1667,6 +1739,7 @@ public class PdfPkcs7
         public IList<string> GetFieldArray(string name)
         {
             var vs = Values[name];
+
             return vs == null ? null : vs;
         }
 
@@ -1694,8 +1767,7 @@ public class PdfPkcs7
         private readonly string _oid;
         private int _index;
 
-        public X509NameTokenizer(
-            string oid)
+        public X509NameTokenizer(string oid)
         {
             _oid = oid;
             _index = -1;
@@ -1758,6 +1830,7 @@ public class PdfPkcs7
             }
 
             _index = end;
+
             return _buf.ToString().Trim();
         }
     }
