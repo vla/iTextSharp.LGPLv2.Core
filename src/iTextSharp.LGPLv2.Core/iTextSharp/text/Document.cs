@@ -124,12 +124,12 @@ public class Document : IDocListener
     /// <summary>
     ///     Gets the product name.
     /// </summary>
-    public static string Product { get; } = "iTextSharp.LGPLv2.Core";
+    public static string Product { get; set; } = "iTextSharp.LGPLv2.Core";
 
     /// <summary>
     ///     Gets the release number.
     /// </summary>
-    public static string Release { get; } = typeof(Document).GetTypeInfo().Assembly.GetName().Version.ToString();
+    public static string Release { get; set; } = typeof(Document).GetTypeInfo().Assembly.GetName().Version.ToString();
 
     /// <summary>
     ///     Returns the lower left y-coordinate.
