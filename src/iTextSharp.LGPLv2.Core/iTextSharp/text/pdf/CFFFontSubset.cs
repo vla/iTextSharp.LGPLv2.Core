@@ -1456,10 +1456,10 @@ public class CffFontSubset : CffFont
             throw new ArgumentNullException(nameof(lSubr));
         }
 
-        if (lSubrsOffsets == null)
-        {
-            throw new ArgumentNullException(nameof(lSubrsOffsets));
-        }
+        //if (lSubrsOffsets == null)
+        //{
+        //    throw new ArgumentNullException(nameof(lSubrsOffsets));
+        //}
 
         // Clear the stack for the subrs
         EmptyStack();
