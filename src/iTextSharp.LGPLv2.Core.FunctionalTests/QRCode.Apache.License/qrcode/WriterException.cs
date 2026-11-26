@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.Serialization;
 
 /*
  * Copyright 2008 ZXing authors
@@ -25,7 +24,6 @@ namespace iTextSharp.text.pdf.qrcode;
  * 
  * @author dswitkin@google.com (Daniel Switkin)
  */
-[Serializable]
 public class WriterException : Exception
 {
     public WriterException()
@@ -34,10 +32,6 @@ public class WriterException : Exception
 
     public WriterException(string message)
         : base(message)
-    {
-    }
-
-    protected WriterException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.Serialization;
 
 /*
  * Copyright 2007 ZXing authors
@@ -26,15 +25,10 @@ namespace iTextSharp.text.pdf.qrcode;
  * </p>
  * @author Sean Owen
  */
-[Serializable]
 public class ReedSolomonException : Exception
 {
     public ReedSolomonException(string message)
         : base(message)
-    {
-    }
-
-    protected ReedSolomonException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 }
