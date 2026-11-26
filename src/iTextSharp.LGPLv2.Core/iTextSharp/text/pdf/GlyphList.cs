@@ -18,8 +18,6 @@ public static class GlyphList
 
             if (resourceStream == null)
             {
-                Console.Error.WriteLine(value: "glyphlist.txt not found as resource.");
-
                 return;
             }
 
@@ -45,7 +43,11 @@ public static class GlyphList
             {
                 var line = tk.NextToken();
 
-                if (line.StartsWith(value: "#", StringComparison.Ordinal))
+                if (line.StartsWith(value: '#'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																										
+				))
                 {
                     continue;
                 }
@@ -76,9 +78,9 @@ public static class GlyphList
                 };
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Console.Error.WriteLine($"glyphlist.txt loading error: {e.Message}");
+            // ...
         }
     }
 

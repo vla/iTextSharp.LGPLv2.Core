@@ -582,7 +582,11 @@ public sealed class RtfDestinationFontTable : RtfDestination
                 break; // found a font, exit the do/while
             }
 
-            pos = fontName.LastIndexOf(value: " ", StringComparison.Ordinal); // find the last space
+            pos = fontName.LastIndexOf(value: ' '
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																											
+			); // find the last space
 
             if (pos > 0)
             {
@@ -640,9 +644,9 @@ public sealed class RtfDestinationFontTable : RtfDestination
             return;
         }
 
-        if (_fontName.Length > 0 && _fontName.IndexOf(value: ";", StringComparison.Ordinal) >= 0)
+        if (_fontName.Length > 0 && _fontName.IndexOf(value: ';', StringComparison.Ordinal) >= 0)
         {
-            _fontName = _fontName.Substring(startIndex: 0, _fontName.IndexOf(value: ";", StringComparison.Ordinal));
+            _fontName = _fontName.Substring(startIndex: 0, _fontName.IndexOf(value: ';', StringComparison.Ordinal));
         }
 
         if (RtfParser.IsImport())

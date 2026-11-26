@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<AssemblyName>iTextSharp.LGPLv2.Core</AssemblyName>
 		<AssemblyTitle>iTextSharp.LGPLv2.Core</AssemblyTitle>
@@ -7,6 +7,11 @@
 		<TargetFrameworks>netstandard2.0;net462;</TargetFrameworks>
 		<NoWarn>$(NoWarn);1591;CA1416</NoWarn>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+		<GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+		<GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+		<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+		<GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
 		<PackageLicenseUrl>http://www.gnu.org/licenses/old-licenses/lgpl-2.0-standalone.html</PackageLicenseUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -29,8 +34,8 @@
 		<Using Include="System.IO" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="SkiaSharp" Version="3.116.1" />
-		<PackageReference Include="BouncyCastle.Cryptography" Version="2.5.0" />
+		<PackageReference Include="SkiaSharp" Version="4.156.1" />
+		<PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
 	</ItemGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />

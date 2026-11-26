@@ -200,9 +200,9 @@ public class AcroFields
         Writer = writer;
         Xfa = new XfaForm(reader);
 
-        if (writer is PdfStamperImp)
+        if (writer is PdfStamperImp imp)
         {
-            _append = ((PdfStamperImp)writer).Append;
+            _append = imp.Append;
         }
 
         Fill();
@@ -467,9 +467,9 @@ public class AcroFields
                                 }
                             }
 
-                            if (tx is TextField)
+                            if (tx is TextField field)
                             {
-                                ((TextField)tx).ExtensionFont = porf;
+                                field.ExtensionFont = porf;
                             }
                         }
                         else
@@ -850,9 +850,9 @@ public class AcroFields
             return "";
         }
 
-        if (v is PrStream)
+        if (v is PrStream stream)
         {
-            var valBytes = PdfReader.GetStreamBytes((PrStream)v);
+            var valBytes = PdfReader.GetStreamBytes(stream);
 
             return PdfEncodings.ConvertToString(valBytes, BaseFont.WINANSI);
         }
@@ -880,9 +880,9 @@ public class AcroFields
             {
                 value = PdfName.DecodeName(v.ToString());
             }
-            else if (v is PdfString)
+            else if (v is PdfString s)
             {
-                value = ((PdfString)v).ToUnicodeString();
+                value = s.ToUnicodeString();
             }
 
             var opts = item.GetValue(idx: 0).GetAsArray(PdfName.Opt);
@@ -906,11 +906,11 @@ public class AcroFields
             return value;
         }
 
-        if (v is PdfString)
+        if (v is PdfString pdfString)
         {
             _lastWasString = true;
 
-            return ((PdfString)v).ToUnicodeString();
+            return pdfString.ToUnicodeString();
         }
 
         if (v is PdfName)
@@ -1298,6 +1298,8 @@ public class AcroFields
 
         return value[1];
     }
+    
+
 
     /// <summary>
     ///     Gets the signature dictionary, the one keyed by /V.
@@ -1316,9 +1318,14 @@ public class AcroFields
         }
 
         var item = fields[name];
-        var merged = item.GetMerged(idx: 0);
+        
+        //get first merged  dicionary with /V key
+        var merged = item.Merged.FirstOrDefault(x=>x.Contains(PdfName.V));
 
+        if (merged == null) return null;
         return merged.GetAsDict(PdfName.V);
+
+
     }
 
     /// <summary>
@@ -1552,8 +1559,16 @@ public class AcroFields
             throw new ArgumentNullException(nameof(newName));
         }
 
-        var idx1 = oldName.LastIndexOf(value: ".", StringComparison.Ordinal) + 1;
-        var idx2 = newName.LastIndexOf(value: ".", StringComparison.Ordinal) + 1;
+        var idx1 = oldName.LastIndexOf(value: '.'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																	
+		) + 1;
+        var idx2 = newName.LastIndexOf(value: '.'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																	
+		) + 1;
 
         if (idx1 != idx2)
         {
@@ -2966,8 +2981,15 @@ public class AcroFields
         foreach (var entry in fields)
         {
             var item = entry.Value;
-            var merged = item.GetMerged(idx: 0);
-
+            
+            // find first merged dictionary with /V
+            var merged = item.Merged.FirstOrDefault(x => x.Contains(PdfName.V));
+            
+            if (merged== null)
+            {
+                continue;
+            }
+          
             if (!PdfName.Sig.Equals(merged.Get(PdfName.Ft)))
             {
                 continue;
@@ -3242,6 +3264,7 @@ public class AcroFields
         /// <param name="idx">instance index</param>
         /// <returns>the merged dictionary for the given instance</returns>
         public PdfDictionary GetMerged(int idx) => Merged[idx];
+        
 
         /// <summary>
         ///     Retrieve the page number of the given instance
@@ -3447,11 +3470,7 @@ public class AcroFields
             set { }
         }
 
-#if NETSTANDARD1_3
-            public void Close()
-#else
         public override void Close()
-#endif
         {
             if (!_closed)
             {
@@ -3519,7 +3538,7 @@ public class AcroFields
         }
     }
 
-    private class InstHit
+    private sealed class InstHit
     {
         private readonly NullValueDictionary<int, int> _hits;
 
@@ -3549,7 +3568,7 @@ public class AcroFields
         }
     }
 
-    private class SorterComparator : IComparer<object[]>
+    private sealed class SorterComparator : IComparer<object[]>
     {
         public int Compare(object[] o1, object[] o2)
         {

@@ -104,6 +104,12 @@ public class PdfContentByte
         0, 0, 0, 1, 1, 0, 1, 1
     };
 
+    private static readonly byte[] _r = DocWriter.GetIsoBytes(text: "\\r");
+    private static readonly byte[] _n = DocWriter.GetIsoBytes(text: "\\n");
+    private static readonly byte[] _t = DocWriter.GetIsoBytes(text: "\\t");
+    private static readonly byte[] _b = DocWriter.GetIsoBytes(text: "\\b");
+    private static readonly byte[] _f = DocWriter.GetIsoBytes(text: "\\f");
+
     private bool _inText;
 
     private int _mcDepth;
@@ -508,9 +514,9 @@ public class PdfContentByte
                 Content.Append(str: "\nBI\n");
                 var pimage = new PdfImage(image, name: "", maskRef: null);
 
-                if (image is ImgJbig2)
+                if (image is ImgJbig2 imgJbig2)
                 {
-                    var globals = ((ImgJbig2)image).GlobalBytes;
+                    var globals = imgJbig2.GlobalBytes;
 
                     if (globals != null)
                     {
@@ -1640,8 +1646,8 @@ public class PdfContentByte
     /// <param name="lly">the lower left y corner of the activation area</param>
     /// <param name="urx">the upper right x corner of the activation area</param>
     /// <param name="ury">the upper right y corner of the activation area</param>
-    public static void RemoteGoto(string filename, string name, float llx, float lly, float urx, float ury)
-        => RemoteGoto(filename, name, llx, lly, urx, ury);
+    public void RemoteGoto(string filename, string name, float llx, float lly, float urx, float ury)
+        => Pdf.RemoteGoto(filename, name, llx, lly, urx, ury);
 
     /// <summary>
     ///     Implements a link to another document.
@@ -2543,9 +2549,9 @@ public class PdfContentByte
         {
             var obj = arrayList[k];
 
-            if (obj is string)
+            if (obj is string s)
             {
-                showText2((string)obj);
+                showText2(s);
                 lastWasNumber = false;
             }
             else
@@ -2835,7 +2841,7 @@ public class PdfContentByte
     /// </summary>
     /// <param name="b">the  byte  array to escape</param>
     /// <returns>an escaped  byte  array</returns>
-    internal static byte[] EscapeString(byte[] b)
+    public static byte[] EscapeString(byte[] b)
     {
         var content = new ByteBuffer();
         EscapeString(b, content);
@@ -2848,8 +2854,18 @@ public class PdfContentByte
     /// </summary>
     /// <param name="b">the  byte  array to escape</param>
     /// <param name="content"></param>
-    internal static void EscapeString(byte[] b, ByteBuffer content)
+    public static void EscapeString(byte[] b, ByteBuffer content)
     {
+        if (b == null)
+        {
+            throw new ArgumentNullException(nameof(b));
+        }
+
+        if (content == null)
+        {
+            throw new ArgumentNullException(nameof(content));
+        }
+
         content.Append_i(b: '(');
 
         for (var k = 0; k < b.Length; ++k)
@@ -2859,23 +2875,23 @@ public class PdfContentByte
             switch ((int)c)
             {
                 case '\r':
-                    content.Append(str: "\\r");
+                    content.Append(_r);
 
                     break;
                 case '\n':
-                    content.Append(str: "\\n");
+                    content.Append(_n);
 
                     break;
                 case '\t':
-                    content.Append(str: "\\t");
+                    content.Append(_t);
 
                     break;
                 case '\b':
-                    content.Append(str: "\\b");
+                    content.Append(_b);
 
                     break;
                 case '\f':
-                    content.Append(str: "\\f");
+                    content.Append(_f);
 
                     break;
                 case '(':
@@ -3000,7 +3016,7 @@ public class PdfContentByte
     {
         if (Writer == null)
         {
-            throw new ArgumentNullException(paramName: "The writer in PdfContentByte is null.");
+            throw new InvalidOperationException(message: "The writer in PdfContentByte is null.");
         }
     }
 

@@ -195,7 +195,7 @@ public sealed class SimpleBookmark : ISimpleXmlDocHandler
                 if (page != null)
                 {
                     page = page.Trim();
-                    var idx = page.IndexOf(value: " ", StringComparison.Ordinal);
+                    var idx = page.IndexOf(value: ' ', StringComparison.Ordinal);
                     int pageNum;
 
                     if (idx < 0)
@@ -670,7 +670,7 @@ public sealed class SimpleBookmark : ISimpleXmlDocHandler
                 if (page != null)
                 {
                     page = page.Trim();
-                    var idx = page.IndexOf(value: " ", StringComparison.Ordinal);
+                    var idx = page.IndexOf(value: ' ', StringComparison.Ordinal);
                     int pageNum;
 
                     if (idx < 0)
@@ -835,7 +835,11 @@ public sealed class SimpleBookmark : ISimpleXmlDocHandler
                     {
                         var fn = tk.NextToken();
 
-                        if (fn.StartsWith(value: "/", StringComparison.Ordinal))
+                        if (fn.StartsWith(value: '/'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																				
+						))
                         {
                             fn = fn.Substring(startIndex: 1);
                         }
@@ -892,7 +896,11 @@ public sealed class SimpleBookmark : ISimpleXmlDocHandler
                     {
                         var fn = tk.NextToken();
 
-                        if (fn.StartsWith(value: "/", StringComparison.Ordinal))
+                        if (fn.StartsWith(value: '/'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																				
+						))
                         {
                             fn = fn.Substring(startIndex: 1);
                         }

@@ -1,8 +1,10 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.util;
 using iTextSharp.LGPLv2.Core.System.Encodings;
+using iTextSharp.text.pdf.security;
 using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Ess;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Asn1.Oiw;
 using Org.BouncyCastle.Asn1.Pkcs;
@@ -26,6 +28,8 @@ namespace iTextSharp.text.pdf;
 /// </summary>
 public class PdfPkcs7
 {
+    private const string IdAaSigningCertificate = "1.2.840.113549.1.9.16.2.12";
+    private const string IdAaSigningCertificateV2 = "1.2.840.113549.1.9.16.2.47";
     private const string IdAdbeRevocation = "1.2.840.113583.1.1.8";
     private const string IdContentType = "1.2.840.113549.1.9.3";
     private const string IdDsa = "1.2.840.10040.4.1";
@@ -43,20 +47,24 @@ public class PdfPkcs7
 
     private readonly List<X509Certificate> _certs;
     private readonly string _digestAlgorithm;
-    private readonly NullValueDictionary<string, object> _digestalgos = new();
     private readonly byte[] _digestAttr;
+    private readonly NullValueDictionary<string, object> _digestalgos = new();
     private readonly IDigest _messageDigest;
 
     private readonly ICipherParameters _privKey;
     private readonly ISigner _sig;
     private readonly byte[] _sigAttr;
+    private CryptoStandard _cryptoStandard;
     private byte[] _digest;
     private string _digestEncryptionAlgorithm;
     private byte[] _externalDigest;
     private byte[] _externalRsAdata;
 
     private byte[] _rsAdata;
+
+    private byte[] _signCertHash;
     private List<X509Certificate> _signCerts;
+    private DateTime _signingTime;
 
     private bool _verified;
     private bool _verifyResult;
@@ -179,9 +187,9 @@ public class PdfPkcs7
         {
             pkcs = din.ReadObject();
         }
-        catch
+        catch(Exception ex)
         {
-            throw new ArgumentException(message: "can't decode PKCS7SignedData object");
+            throw new ArgumentException(message: "can't decode PKCS7SignedData object", ex);
         }
 
         if (pkcs is not Asn1Sequence signedData)
@@ -447,6 +455,19 @@ public class PdfPkcs7
             _sig = SignerUtilities.GetSigner(GetDigestAlgorithm());
             _sig.Init(forSigning: true, privKey);
         }
+    }
+
+    /// <summary>
+    ///     Creates a PdfPkcs7 instance for external signing (no private key).
+    ///     The signature bytes will be injected later via SetExternalDigest.
+    ///     @since    3.7.12
+    /// </summary>
+    /// <param name="chain">the certificate chain</param>
+    /// <param name="hashAlgorithm">the hash algorithm (e.g. "SHA-256")</param>
+    /// <param name="hasRsAdata">true if the sub-filter is adbe.pkcs7.sha1</param>
+    public PdfPkcs7(ICollection<X509Certificate> chain, string hashAlgorithm, bool hasRsAdata) : this(privKey: null,
+        chain?.ToArray(), crlList: null, hashAlgorithm, hasRsAdata)
+    {
     }
 
     /// <summary>
@@ -935,6 +956,41 @@ public class PdfPkcs7
         => getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp).GetEncoded(Asn1Encodable.Der);
 
     /// <summary>
+    ///     Gets the authenticated attribute bytes for external signing.
+    ///     Includes optional CRL bytes in the attribute set.
+    ///     @since    3.7.12
+    /// </summary>
+    /// <param name="secondDigest">the content digest</param>
+    /// <param name="ocsp">the OCSP response bytes, or null</param>
+    /// <param name="crlBytes">the CRL bytes collection, or null</param>
+    /// <param name="sigtype">the signature standard (CMS or CADES)</param>
+    /// <returns>the byte array representation of the authenticatedAttributes</returns>
+    public byte[] GetAuthenticatedAttributeBytes(byte[] secondDigest,
+        byte[] ocsp,
+        ICollection<byte[]> crlBytes,
+        CryptoStandard sigtype)
+    {
+        var signingTime = DateTime.Now;
+        _signingTime = signingTime;
+
+        if (sigtype == CryptoStandard.Cades)
+        {
+            _cryptoStandard = sigtype;
+            var certHash = DigestAlgorithms.Digest(GetHashAlgorithm(), SigningCertificate.GetEncoded());
+            _signCertHash = certHash;
+
+            return getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp, crlBytes, sigtype, certHash,
+                    GetHashAlgorithm())
+                .GetEncoded(Asn1Encodable.Der);
+        }
+
+        _cryptoStandard = CryptoStandard.Cms;
+        _signCertHash = null;
+
+        return getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp, crlBytes).GetEncoded(Asn1Encodable.Der);
+    }
+
+    /// <summary>
     ///     Get the algorithm used to calculate the message digest
     /// </summary>
     /// <returns>the algorithm used to calculate the message digest</returns>
@@ -1070,7 +1126,7 @@ public class PdfPkcs7
 
         // Add the signerInfo version
         //
-        signerinfo.Add(new DerInteger(SigningInfoVersion));
+        signerinfo.Add(DerInteger.ValueOf(SigningInfoVersion));
 
         v = new Asn1EncodableVector();
         v.Add(getIssuer(SigningCertificate.GetTbsCertificate()));
@@ -1086,8 +1142,19 @@ public class PdfPkcs7
         // add the authenticated attribute if present
         if (secondDigest != null /*&& signingTime != null*/)
         {
-            signerinfo.Add(new DerTaggedObject(isExplicit: false, tagNo: 0,
-                getAuthenticatedAttributeSet(secondDigest, signingTime, ocsp)));
+            var actualSigningTime = _signingTime != default ? _signingTime : signingTime;
+
+            if (_cryptoStandard == CryptoStandard.Cades && _signCertHash != null)
+            {
+                signerinfo.Add(new DerTaggedObject(isExplicit: false, tagNo: 0,
+                    getAuthenticatedAttributeSet(secondDigest, actualSigningTime, ocsp, crlBytes: null, _cryptoStandard,
+                        _signCertHash, GetHashAlgorithm())));
+            }
+            else
+            {
+                signerinfo.Add(new DerTaggedObject(isExplicit: false, tagNo: 0,
+                    getAuthenticatedAttributeSet(secondDigest, actualSigningTime, ocsp)));
+            }
         }
 
         // Add the digestEncryptionAlgorithm
@@ -1121,7 +1188,7 @@ public class PdfPkcs7
 
         // Finally build the body out of all the components above
         var body = new Asn1EncodableVector();
-        body.Add(new DerInteger(Version));
+        body.Add(DerInteger.ValueOf(Version));
         body.Add(new DerSet(digestAlgorithms));
         body.Add(contentinfo);
         body.Add(new DerTaggedObject(isExplicit: false, tagNo: 0, dercertificates));
@@ -1137,7 +1204,7 @@ public class PdfPkcs7
         //                }
 
         // Only allow one signerInfo
-        body.Add(new DerSet(new DerSequence(signerinfo)));
+        body.Add(DerSet.FromElement(new DerSequence(signerinfo)));
 
         // Now we have the body, wrap it in it's PKCS7Signed shell
         // and return it
@@ -1152,6 +1219,23 @@ public class PdfPkcs7
 
         return bOut.ToArray();
     }
+
+    /// <summary>
+    ///     Gets the bytes for the PKCS7SignedData object with CRL and signature standard support.
+    ///     @since    3.7.12
+    /// </summary>
+    /// <param name="secondDigest">the digest in the authenticatedAttributes</param>
+    /// <param name="tsaClient">TSAClient - null or an optional time stamp authority client</param>
+    /// <param name="ocsp">OCSP response bytes, or null</param>
+    /// <param name="crlBytes">CRL bytes collection, or null</param>
+    /// <param name="sigtype">the signature standard (CMS or CADES)</param>
+    /// <returns>the bytes for the PKCS7SignedData object</returns>
+    public byte[] GetEncodedPkcs7(byte[] secondDigest,
+        ITsaClient tsaClient,
+        byte[] ocsp,
+        ICollection<byte[]> crlBytes,
+        CryptoStandard sigtype)
+        => GetEncodedPkcs7(secondDigest, DateTime.Now, tsaClient, ocsp);
 
     /// <summary>
     ///     Returns the algorithm.
@@ -1391,7 +1475,7 @@ public class PdfPkcs7
         var v = new Asn1EncodableVector();
         v.Add(new DerObjectIdentifier(idTimeStampToken)); // id-aa-timeStampToken
         var seq = (Asn1Sequence)tempstream.ReadObject();
-        v.Add(new DerSet(seq));
+        v.Add(DerSet.FromElement(seq));
 
         unauthAttributes.Add(new DerSequence(v));
 
@@ -1524,8 +1608,183 @@ public class PdfPkcs7
             v3.Add(den);
             v3.Add(new DerTaggedObject(isExplicit: true, tagNo: 0, new DerSequence(v2)));
             vo1.Add(new DerSequence(v3));
-            v.Add(new DerSet(new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(vo1)))));
+
+            v.Add(DerSet.FromElement(
+                new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(vo1)))));
+
             attribute.Add(new DerSequence(v));
+        }
+
+        return new DerSet(attribute);
+    }
+
+    private static DerSet getAuthenticatedAttributeSet(byte[] secondDigest,
+        DateTime signingTime,
+        byte[] ocsp,
+        ICollection<byte[]> crlBytes)
+    {
+        var attribute = new Asn1EncodableVector();
+        var v = new Asn1EncodableVector();
+        v.Add(new DerObjectIdentifier(IdContentType));
+        v.Add(new DerSet(new DerObjectIdentifier(IdPkcs7Data)));
+        attribute.Add(new DerSequence(v));
+        v = new Asn1EncodableVector();
+        v.Add(new DerObjectIdentifier(IdSigningTime));
+        v.Add(new DerSet(new DerUtcTime(signingTime, DateTimeFormatInfo.InvariantInfo.Calendar.TwoDigitYearMax)));
+        attribute.Add(new DerSequence(v));
+        v = new Asn1EncodableVector();
+        v.Add(new DerObjectIdentifier(IdMessageDigest));
+        v.Add(new DerSet(new DerOctetString(secondDigest)));
+        attribute.Add(new DerSequence(v));
+
+        if (ocsp != null)
+        {
+            v = new Asn1EncodableVector();
+            v.Add(new DerObjectIdentifier(IdAdbeRevocation));
+            var doctet = new DerOctetString(ocsp);
+            var vo1 = new Asn1EncodableVector();
+            var v2 = new Asn1EncodableVector();
+            v2.Add(OcspObjectIdentifiers.PkixOcspBasic);
+            v2.Add(doctet);
+            var den = new DerEnumerated(val: 0);
+            var v3 = new Asn1EncodableVector();
+            v3.Add(den);
+            v3.Add(new DerTaggedObject(isExplicit: true, tagNo: 0, new DerSequence(v2)));
+            vo1.Add(new DerSequence(v3));
+
+            v.Add(DerSet.FromElement(
+                new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(vo1)))));
+
+            attribute.Add(new DerSequence(v));
+        }
+
+        if (crlBytes != null)
+        {
+            foreach (var crl in crlBytes)
+            {
+                if (crl == null)
+                {
+                    continue;
+                }
+
+                v = new Asn1EncodableVector();
+                v.Add(new DerObjectIdentifier(IdAdbeRevocation));
+                var crlOctet = new DerOctetString(crl);
+                var crlVo1 = new Asn1EncodableVector();
+                var crlV2 = new Asn1EncodableVector();
+                crlV2.Add(OcspObjectIdentifiers.PkixOcspBasic);
+                crlV2.Add(crlOctet);
+                var crlDen = new DerEnumerated(val: 1);
+                var crlV3 = new Asn1EncodableVector();
+                crlV3.Add(crlDen);
+                crlV3.Add(new DerTaggedObject(isExplicit: true, tagNo: 0, new DerSequence(crlV2)));
+                crlVo1.Add(new DerSequence(crlV3));
+
+                v.Add(DerSet.FromElement(
+                    new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(crlVo1)))));
+
+                attribute.Add(new DerSequence(v));
+            }
+        }
+
+        return new DerSet(attribute);
+    }
+
+    private static DerSet getAuthenticatedAttributeSet(byte[] secondDigest,
+        DateTime signingTime,
+        byte[] ocsp,
+        ICollection<byte[]> crlBytes,
+        CryptoStandard sigtype,
+        byte[] signCertHash,
+        string hashAlgorithm)
+    {
+        var attribute = new Asn1EncodableVector();
+        var v = new Asn1EncodableVector();
+        v.Add(new DerObjectIdentifier(IdContentType));
+        v.Add(new DerSet(new DerObjectIdentifier(IdPkcs7Data)));
+        attribute.Add(new DerSequence(v));
+        v = new Asn1EncodableVector();
+        v.Add(new DerObjectIdentifier(IdSigningTime));
+        v.Add(new DerSet(new DerUtcTime(signingTime, DateTimeFormatInfo.InvariantInfo.Calendar.TwoDigitYearMax)));
+        attribute.Add(new DerSequence(v));
+        v = new Asn1EncodableVector();
+        v.Add(new DerObjectIdentifier(IdMessageDigest));
+        v.Add(new DerSet(new DerOctetString(secondDigest)));
+        attribute.Add(new DerSequence(v));
+
+        if (sigtype == CryptoStandard.Cades && signCertHash != null)
+        {
+            var hashAlgo = hashAlgorithm ?? "SHA-256";
+
+            if (string.Equals(hashAlgo, b: "SHA1", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(hashAlgo, b: "SHA-1", StringComparison.OrdinalIgnoreCase))
+            {
+                v = new Asn1EncodableVector();
+                v.Add(new DerObjectIdentifier(IdAaSigningCertificate));
+                var essCert = new EssCertID(signCertHash);
+                v.Add(new DerSet((Asn1Encodable)new DerSequence(essCert)));
+                attribute.Add(new DerSequence(v));
+            }
+            else
+            {
+                v = new Asn1EncodableVector();
+                v.Add(new DerObjectIdentifier(IdAaSigningCertificateV2));
+                var digestOid = DigestAlgorithms.GetAllowedDigests(hashAlgo) ?? hashAlgo;
+                var algId = new AlgorithmIdentifier(new DerObjectIdentifier(digestOid));
+                var essCertV2 = new EssCertIDv2(algId, signCertHash);
+                v.Add(new DerSet((Asn1Encodable)new DerSequence(essCertV2)));
+                attribute.Add(new DerSequence(v));
+            }
+        }
+
+        if (ocsp != null)
+        {
+            v = new Asn1EncodableVector();
+            v.Add(new DerObjectIdentifier(IdAdbeRevocation));
+            var doctet = new DerOctetString(ocsp);
+            var vo1 = new Asn1EncodableVector();
+            var v2 = new Asn1EncodableVector();
+            v2.Add(OcspObjectIdentifiers.PkixOcspBasic);
+            v2.Add(doctet);
+            var den = new DerEnumerated(val: 0);
+            var v3 = new Asn1EncodableVector();
+            v3.Add(den);
+            v3.Add(new DerTaggedObject(isExplicit: true, tagNo: 0, new DerSequence(v2)));
+            vo1.Add(new DerSequence(v3));
+
+            v.Add(DerSet.FromElement(
+                new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(vo1)))));
+
+            attribute.Add(new DerSequence(v));
+        }
+
+        if (crlBytes != null)
+        {
+            foreach (var crl in crlBytes)
+            {
+                if (crl == null)
+                {
+                    continue;
+                }
+
+                v = new Asn1EncodableVector();
+                v.Add(new DerObjectIdentifier(IdAdbeRevocation));
+                var crlOctet = new DerOctetString(crl);
+                var crlVo1 = new Asn1EncodableVector();
+                var crlV2 = new Asn1EncodableVector();
+                crlV2.Add(OcspObjectIdentifiers.PkixOcspBasic);
+                crlV2.Add(crlOctet);
+                var crlDen = new DerEnumerated(val: 1);
+                var crlV3 = new Asn1EncodableVector();
+                crlV3.Add(crlDen);
+                crlV3.Add(new DerTaggedObject(isExplicit: true, tagNo: 0, new DerSequence(crlV2)));
+                crlVo1.Add(new DerSequence(crlV3));
+
+                v.Add(DerSet.FromElement(
+                    new DerSequence(new DerTaggedObject(isExplicit: true, tagNo: 1, new DerSequence(crlVo1)))));
+
+                attribute.Add(new DerSequence(v));
+            }
         }
 
         return new DerSet(attribute);
@@ -1703,7 +1962,7 @@ public class PdfPkcs7
             while (nTok.HasMoreTokens())
             {
                 var token = nTok.NextToken();
-                var index = token.IndexOf(value: "=", StringComparison.Ordinal);
+                var index = token.IndexOf(value: '=', StringComparison.Ordinal);
 
                 if (index == -1)
                 {

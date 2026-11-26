@@ -285,13 +285,56 @@ public abstract class BaseFont
     public const string ZAPFDINGBATS = "ZapfDingbats";
 
     public static readonly int[] CharRangeArabic =
-        { 0, 0x7f, 0x0600, 0x067f, 0x20a0, 0x20cf, 0xfb50, 0xfbff, 0xfe70, 0xfeff };
+    {
+        0,
+        0x7f,
+        0x0600,
+        0x067f,
+        0x20a0,
+        0x20cf,
+        0xfb50,
+        0xfbff,
+        0xfe70,
+        0xfeff
+    };
 
-    public static readonly int[] CharRangeCyrillic = { 0, 0x7f, 0x0400, 0x052f, 0x2000, 0x206f, 0x20a0, 0x20cf };
-    public static readonly int[] CharRangeHebrew = { 0, 0x7f, 0x0590, 0x05ff, 0x20a0, 0x20cf, 0xfb1d, 0xfb4f };
-    public static readonly int[] CharRangeLatin = { 0, 0x17f, 0x2000, 0x206f, 0x20a0, 0x20cf, 0xfb00, 0xfb06 };
+    public static readonly int[] CharRangeCyrillic =
+    {
+        0,
+        0x7f,
+        0x0400,
+        0x052f,
+        0x2000,
+        0x206f,
+        0x20a0,
+        0x20cf
+    };
 
-    protected internal static readonly List<object> ResourceSearch = new();
+    public static readonly int[] CharRangeHebrew =
+    {
+        0,
+        0x7f,
+        0x0590,
+        0x05ff,
+        0x20a0,
+        0x20cf,
+        0xfb1d,
+        0xfb4f
+    };
+
+    public static readonly int[] CharRangeLatin =
+    {
+        0,
+        0x17f,
+        0x2000,
+        0x206f,
+        0x20a0,
+        0x20cf,
+        0xfb00,
+        0xfb06
+    };
+
+    internal protected static readonly List<object> ResourceSearch = new();
 
     /// <summary>
     ///     list of the 14 built in fonts.
@@ -304,6 +347,14 @@ public abstract class BaseFont
     /// </summary>
     protected static readonly INullValueDictionary<string, BaseFont> FontCache =
         new NullValueDictionary<string, BaseFont>();
+
+#if NET_11 || NET_10
+    private static readonly Lock _lockObject = new();
+    private static readonly Lock _syncObject = new();
+#else
+    private static readonly object _lockObject = new();
+    private static readonly object _syncObject = new();
+#endif
 
     private static readonly Random _random = new();
 
@@ -422,6 +473,7 @@ public abstract class BaseFont
     /// </summary>
     public int CompressionLevel
     {
+        get => compressionLevel;
         set
         {
             if (value < PdfStream.NO_COMPRESSION || value > PdfStream.BEST_COMPRESSION)
@@ -433,7 +485,6 @@ public abstract class BaseFont
                 compressionLevel = value;
             }
         }
-        get => compressionLevel;
     }
 
     /// <summary>
@@ -449,8 +500,8 @@ public abstract class BaseFont
     /// </summary>
     public bool DirectTextToByte
     {
-        set => directTextToByte = value;
         get => directTextToByte;
+        set => directTextToByte = value;
     }
 
     /// <summary>
@@ -489,8 +540,8 @@ public abstract class BaseFont
     /// </summary>
     public bool ForceWidthsOutput
     {
-        set => forceWidthsOutput = value;
         get => forceWidthsOutput;
+        set => forceWidthsOutput = value;
     }
 
     /// <summary>
@@ -519,8 +570,8 @@ public abstract class BaseFont
     /// </summary>
     public bool Subset
     {
-        set => subset = value;
         get => subset;
+        set => subset = value;
     }
 
     /// <summary>
@@ -541,12 +592,11 @@ public abstract class BaseFont
         {
             ResourceSearch.Add(obj);
         }
-        else if (obj is string)
+        else if (obj is string s)
         {
-            var f = (string)obj;
-            if (Directory.Exists(f) || File.Exists(f))
+            if (Directory.Exists(s) || File.Exists(s))
             {
-                ResourceSearch.Add(obj);
+                ResourceSearch.Add(s);
             }
         }
     }
@@ -599,8 +649,10 @@ public abstract class BaseFont
     /// <param name="encoding">the encoding to be applied to this font</param>
     /// <param name="embedded">true if the font is to be embedded in the PDF</param>
     /// <returns>returns a new font. This font may come from the cache</returns>
-    public static BaseFont CreateFont(string name, string encoding, bool embedded) =>
-        CreateFont(name, encoding, embedded, true, null, null, false);
+    public static BaseFont CreateFont(string name, string encoding, bool embedded)
+        => CreateFont(name, encoding, embedded,
+            cached: true, ttfAfm: null, pfb: null,
+            noThrow: false);
 
     /// <summary>
     ///     Creates a new font. This font can be one of the 14 built in types,
@@ -645,8 +697,11 @@ public abstract class BaseFont
     ///     forceRead is true
     /// </param>
     /// <returns>returns a new font. This font may come from the cache</returns>
-    public static BaseFont CreateFont(string name, string encoding, bool embedded, bool forceRead) =>
-        CreateFont(name, encoding, embedded, true, null, null, forceRead);
+    public static BaseFont CreateFont(string name, string encoding, bool embedded,
+        bool forceRead)
+        => CreateFont(name, encoding, embedded,
+            cached: true, ttfAfm: null, pfb: null,
+            forceRead);
 
     /// <summary>
     ///     Creates a new font. This font can be one of the 14 built in types,
@@ -692,9 +747,11 @@ public abstract class BaseFont
     /// <param name="ttfAfm">the true type font or the afm in a byte array</param>
     /// <param name="pfb">the pfb in a byte array</param>
     /// <returns>returns a new font. This font may come from the cache but only if cached</returns>
-    public static BaseFont CreateFont(string name, string encoding, bool embedded, bool cached, byte[] ttfAfm,
-                                      byte[] pfb) =>
-        CreateFont(name, encoding, embedded, cached, ttfAfm, pfb, false);
+    public static BaseFont CreateFont(string name, string encoding, bool embedded,
+        bool cached, byte[] ttfAfm, byte[] pfb)
+        => CreateFont(name, encoding, embedded,
+            cached, ttfAfm, pfb,
+            noThrow: false);
 
     /// <summary>
     ///     Creates a new font. This font can be one of the 14 built in types,
@@ -748,9 +805,12 @@ public abstract class BaseFont
     ///     will throw
     /// </param>
     /// <returns>returns a new font. This font may come from the cache but only if cached</returns>
-    public static BaseFont CreateFont(string name, string encoding, bool embedded, bool cached, byte[] ttfAfm,
-                                      byte[] pfb, bool noThrow) =>
-        CreateFont(name, encoding, embedded, cached, ttfAfm, pfb, false, false);
+    public static BaseFont CreateFont(string name, string encoding, bool embedded,
+        bool cached, byte[] ttfAfm, byte[] pfb,
+        bool noThrow)
+        => CreateFont(name, encoding, embedded,
+            cached, ttfAfm, pfb,
+            noThrow: false, forceRead: false);
 
     /// <summary>
     ///     Creates a new font. This font can be one of the 14 built in types,
@@ -808,8 +868,9 @@ public abstract class BaseFont
     ///     forceRead is true
     /// </param>
     /// <returns>returns a new font. This font may come from the cache but only if cached</returns>
-    public static BaseFont CreateFont(string name, string encoding, bool embedded, bool cached, byte[] ttfAfm,
-                                      byte[] pfb, bool noThrow, bool forceRead)
+    public static BaseFont CreateFont(string name, string encoding, bool embedded,
+        bool cached, byte[] ttfAfm, byte[] pfb,
+        bool noThrow, bool forceRead)
     {
         if (name == null)
         {
@@ -819,7 +880,8 @@ public abstract class BaseFont
         var nameBase = GetBaseName(name);
         encoding = NormalizeEncoding(encoding);
         var isBuiltinFonts14 = BuiltinFonts14.ContainsKey(name);
-        var isCjkFont = isBuiltinFonts14 ? false : CjkFont.IsCjkFont(nameBase, encoding);
+        var isCjkFont = !isBuiltinFonts14 && CjkFont.IsCjkFont(nameBase, encoding);
+
         if (isBuiltinFonts14 || isCjkFont)
         {
             embedded = false;
@@ -833,9 +895,10 @@ public abstract class BaseFont
         BaseFont fontFound;
         BaseFont fontBuilt;
         var key = $"{name}\n{encoding}\n{embedded}";
+
         if (cached)
         {
-            lock (FontCache)
+            lock (_lockObject)
             {
                 fontFound = FontCache[key];
             }
@@ -846,24 +909,29 @@ public abstract class BaseFont
             }
         }
 
-        if (isBuiltinFonts14 || name.EndsWith(".afm", StringComparison.OrdinalIgnoreCase) ||
-            name.EndsWith(".pfm", StringComparison.OrdinalIgnoreCase))
+        if (isBuiltinFonts14 || name.EndsWith(value: ".afm", StringComparison.OrdinalIgnoreCase) ||
+            name.EndsWith(value: ".pfm", StringComparison.OrdinalIgnoreCase))
         {
-            fontBuilt = new Type1Font(name, encoding, embedded, ttfAfm, pfb, forceRead);
+            fontBuilt = new Type1Font(name, encoding, embedded,
+                ttfAfm, pfb, forceRead);
+
             fontBuilt.FastWinansi = encoding.Equals(CP1252, StringComparison.Ordinal);
         }
-        else if (nameBase.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
-                 nameBase.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) ||
-                 nameBase.IndexOf(".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
+        else if (nameBase.EndsWith(value: ".ttf", StringComparison.OrdinalIgnoreCase) ||
+                 nameBase.EndsWith(value: ".otf", StringComparison.OrdinalIgnoreCase) ||
+                 nameBase.IndexOf(value: ".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
         {
             if (encoding.Equals(IDENTITY_H, StringComparison.Ordinal) ||
                 encoding.Equals(IDENTITY_V, StringComparison.Ordinal))
             {
-                fontBuilt = new TrueTypeFontUnicode(name, encoding, embedded, ttfAfm, forceRead);
+                fontBuilt = new TrueTypeFontUnicode(name, encoding, embedded,
+                    ttfAfm, forceRead);
             }
             else
             {
-                fontBuilt = new TrueTypeFont(name, encoding, embedded, ttfAfm, false, forceRead);
+                fontBuilt = new TrueTypeFont(name, encoding, embedded,
+                    ttfAfm, justNames: false, forceRead);
+
                 fontBuilt.FastWinansi = encoding.Equals(CP1252, StringComparison.Ordinal);
             }
         }
@@ -882,9 +950,10 @@ public abstract class BaseFont
 
         if (cached)
         {
-            lock (FontCache)
+            lock (_lockObject)
             {
                 fontFound = FontCache[key];
+
                 if (fontFound != null)
                 {
                     return fontFound;
@@ -893,12 +962,14 @@ public abstract class BaseFont
                 FontCache.Add(key, fontBuilt);
 
                 var keyNormalized = $"{fontBuilt.PostscriptFontName}\n{encoding}\n{embedded}";
+
                 if (!FontCache.ContainsKey(keyNormalized))
                 {
                     FontCache.Add(keyNormalized, fontBuilt);
 
                     var keyNormalizedToLower =
                         $"{fontBuilt.PostscriptFontName.ToLowerInvariant()}\n{encoding}\n{embedded}";
+
                     if (!FontCache.ContainsKey(keyNormalizedToLower))
                     {
                         FontCache.Add(keyNormalizedToLower, fontBuilt);
@@ -956,18 +1027,26 @@ public abstract class BaseFont
 
         var nameBase = GetBaseName(name);
         BaseFont fontBuilt = null;
-        if (nameBase.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
-            nameBase.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) ||
-            nameBase.IndexOf(".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
+
+        if (nameBase.EndsWith(value: ".ttf", StringComparison.OrdinalIgnoreCase) ||
+            nameBase.EndsWith(value: ".otf", StringComparison.OrdinalIgnoreCase) ||
+            nameBase.IndexOf(value: ".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
         {
-            fontBuilt = new TrueTypeFont(name, CP1252, false, ttfAfm, true, false);
+            fontBuilt = new TrueTypeFont(name, CP1252, emb: false,
+                ttfAfm, justNames: true, forceRead: false);
         }
         else
         {
-            fontBuilt = CreateFont(name, encoding, false, false, ttfAfm, null);
+            fontBuilt = CreateFont(name, encoding, embedded: false,
+                cached: false, ttfAfm, pfb: null);
         }
 
-        return new object[] { fontBuilt.PostscriptFontName, fontBuilt.FamilyFontName, fontBuilt.FullFontName };
+        return new object[]
+        {
+            fontBuilt.PostscriptFontName,
+            fontBuilt.FamilyFontName,
+            fontBuilt.FullFontName
+        };
     }
 
     /// <summary>
@@ -988,15 +1067,18 @@ public abstract class BaseFont
 
         var nameBase = GetBaseName(name);
         BaseFont fontBuilt = null;
-        if (nameBase.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
-            nameBase.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) ||
-            nameBase.IndexOf(".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
+
+        if (nameBase.EndsWith(value: ".ttf", StringComparison.OrdinalIgnoreCase) ||
+            nameBase.EndsWith(value: ".otf", StringComparison.OrdinalIgnoreCase) ||
+            nameBase.IndexOf(value: ".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
         {
-            fontBuilt = new TrueTypeFont(name, CP1252, false, ttfAfm, true, false);
+            fontBuilt = new TrueTypeFont(name, CP1252, emb: false,
+                ttfAfm, justNames: true, forceRead: false);
         }
         else
         {
-            fontBuilt = CreateFont(name, encoding, false, false, ttfAfm, null);
+            fontBuilt = CreateFont(name, encoding, embedded: false,
+                cached: false, ttfAfm, pfb: null);
         }
 
         return fontBuilt.AllNameEntries;
@@ -1019,9 +1101,11 @@ public abstract class BaseFont
         var hits = new NullValueDictionary<int, int>();
         List<object[]> fonts = new();
         var npages = reader.NumberOfPages;
+
         for (var k = 1; k <= npages; ++k)
         {
-            recourseFonts(reader.GetPageN(k), hits, fonts, 1);
+            recourseFonts(reader.GetPageN(k), hits, fonts,
+                level: 1);
         }
 
         return fonts;
@@ -1044,7 +1128,10 @@ public abstract class BaseFont
 
         var hits = new NullValueDictionary<int, int>();
         List<object[]> fonts = new();
-        recourseFonts(reader.GetPageN(page), hits, fonts, 1);
+
+        recourseFonts(reader.GetPageN(page), hits, fonts,
+            level: 1);
+
         return fonts;
     }
 
@@ -1071,15 +1158,18 @@ public abstract class BaseFont
 
         var nameBase = GetBaseName(name);
         BaseFont fontBuilt = null;
-        if (nameBase.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
-            nameBase.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) ||
-            nameBase.IndexOf(".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
+
+        if (nameBase.EndsWith(value: ".ttf", StringComparison.OrdinalIgnoreCase) ||
+            nameBase.EndsWith(value: ".otf", StringComparison.OrdinalIgnoreCase) ||
+            nameBase.IndexOf(value: ".ttc,", StringComparison.OrdinalIgnoreCase) > 0)
         {
-            fontBuilt = new TrueTypeFont(name, CP1252, false, ttfAfm, true, false);
+            fontBuilt = new TrueTypeFont(name, CP1252, emb: false,
+                ttfAfm, justNames: true, forceRead: false);
         }
         else
         {
-            fontBuilt = CreateFont(name, encoding, false, false, ttfAfm, null);
+            fontBuilt = CreateFont(name, encoding, embedded: false,
+                cached: false, ttfAfm, pfb: null);
         }
 
         return fontBuilt.FullFontName;
@@ -1099,6 +1189,7 @@ public abstract class BaseFont
         }
 
         Stream istr = null;
+
         // Try to use resource loader to load the properties file.
         try
         {
@@ -1117,19 +1208,20 @@ public abstract class BaseFont
         for (var k = 0; k < ResourceSearch.Count; ++k)
         {
             var obj = ResourceSearch[k];
+
             try
             {
-                if (obj is Assembly)
+                if (obj is Assembly assembly)
                 {
-                    istr = ((Assembly)obj).GetManifestResourceStream(key);
+                    istr = assembly.GetManifestResourceStream(key);
+
                     if (istr != null)
                     {
                         return istr;
                     }
                 }
-                else if (obj is string)
+                else if (obj is string dir)
                 {
-                    var dir = (string)obj;
                     try
                     {
                         var asm = Assembly.LoadFrom(dir);
@@ -1144,21 +1236,30 @@ public abstract class BaseFont
                         return istr;
                     }
 
-                    var modkey = key.Replace('.', '/');
+                    var modkey = key.Replace(oldChar: '.', newChar: '/');
                     var fullPath = Path.Combine(dir, modkey);
+
                     if (File.Exists(fullPath))
                     {
-                        return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        return new FileStream(fullPath, FileMode.Open, FileAccess.Read,
+                            FileShare.Read);
                     }
 
-                    var idx = modkey.LastIndexOf("/", StringComparison.Ordinal);
+                    var idx = modkey.LastIndexOf(value: '/'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																	
+					);
+
                     if (idx >= 0)
                     {
-                        modkey = modkey.Substring(0, idx) + "." + modkey.Substring(idx + 1);
+                        modkey = modkey.Substring(startIndex: 0, idx) + "." + modkey.Substring(idx + 1);
                         fullPath = Path.Combine(dir, modkey);
+
                         if (File.Exists(fullPath))
                         {
-                            return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            return new FileStream(fullPath, FileMode.Open, FileAccess.Read,
+                                FileShare.Read);
                         }
                     }
                 }
@@ -1196,6 +1297,7 @@ public abstract class BaseFont
     public virtual bool CharExists(int c)
     {
         var b = ConvertToBytes(c);
+
         return b.Length > 0;
     }
 
@@ -1210,28 +1312,29 @@ public abstract class BaseFont
     {
         for (var c = '\u064b'; c <= '\u0658'; ++c)
         {
-            SetCharAdvance(c, 0);
+            SetCharAdvance(c, advance: 0);
         }
 
-        SetCharAdvance('\u0670', 0);
+        SetCharAdvance(c: '\u0670', advance: 0);
+
         for (var c = '\u06d6'; c <= '\u06dc'; ++c)
         {
-            SetCharAdvance(c, 0);
+            SetCharAdvance(c, advance: 0);
         }
 
         for (var c = '\u06df'; c <= '\u06e4'; ++c)
         {
-            SetCharAdvance(c, 0);
+            SetCharAdvance(c, advance: 0);
         }
 
         for (var c = '\u06e7'; c <= '\u06e8'; ++c)
         {
-            SetCharAdvance(c, 0);
+            SetCharAdvance(c, advance: 0);
         }
 
         for (var c = '\u06ea'; c <= '\u06ed'; ++c)
         {
-            SetCharAdvance(c, 0);
+            SetCharAdvance(c, advance: 0);
         }
     }
 
@@ -1250,9 +1353,11 @@ public abstract class BaseFont
 
         var max = 0;
         var chars = text.ToCharArray();
+
         for (var k = 0; k < chars.Length; ++k)
         {
             var bbox = GetCharBBox(chars[k]);
+
             if (bbox != null && bbox[3] > max)
             {
                 max = bbox[3];
@@ -1283,6 +1388,7 @@ public abstract class BaseFont
     public virtual int[] GetCharBBox(int c)
     {
         var b = ConvertToBytes(c);
+
         if (b.Length == 0)
         {
             return null;
@@ -1314,9 +1420,11 @@ public abstract class BaseFont
 
         var min = 0;
         var chars = text.ToCharArray();
+
         for (var k = 0; k < chars.Length; ++k)
         {
             var bbox = GetCharBBox(chars[k]);
+
             if (bbox != null && bbox[1] < min)
             {
                 min = bbox[1];
@@ -1391,6 +1499,7 @@ public abstract class BaseFont
 
         var total = 0;
         var mbytes = ConvertToBytes((char)char1);
+
         for (var k = 0; k < mbytes.Length; ++k)
         {
             total += widths[0xff & mbytes[k]];
@@ -1412,12 +1521,15 @@ public abstract class BaseFont
         }
 
         var total = 0;
+
         if (FastWinansi)
         {
             var len = text.Length;
+
             for (var k = 0; k < len; ++k)
             {
                 var char1 = text[k];
+
                 if (char1 < 128 || (char1 >= 160 && char1 <= 255))
                 {
                     total += widths[char1];
@@ -1432,6 +1544,7 @@ public abstract class BaseFont
         }
 
         var mbytes = ConvertToBytes(text);
+
         for (var k = 0; k < mbytes.Length; ++k)
         {
             total += widths[0xff & mbytes[k]];
@@ -1471,6 +1584,7 @@ public abstract class BaseFont
         }
 
         var size = GetWidth(text) * 0.001f * fontSize;
+
         if (!HasKernPairs())
         {
             return size;
@@ -1479,6 +1593,7 @@ public abstract class BaseFont
         var len = text.Length - 1;
         var kern = 0;
         var c = text.ToCharArray();
+
         for (var k = 0; k < len; ++k)
         {
             kern += GetKerning(c[k], c[k + 1]);
@@ -1515,12 +1630,14 @@ public abstract class BaseFont
     public virtual bool SetCharAdvance(int c, int advance)
     {
         var b = ConvertToBytes(c);
+
         if (b.Length == 0)
         {
             return false;
         }
 
         widths[0xff & b[0]] = advance;
+
         return true;
     }
 
@@ -1540,15 +1657,17 @@ public abstract class BaseFont
     internal static string CreateSubsetPrefix()
     {
         var s = new char[7];
-        lock (_random)
+
+        lock (_syncObject)
         {
             for (var k = 0; k < 6; ++k)
             {
-                s[k] = (char)_random.Next('A', 'Z' + 1);
+                s[k] = (char)_random.Next(minValue: 'A', 'Z' + 1);
             }
         }
 
         s[6] = '+';
+
         return new string(s);
     }
 
@@ -1562,7 +1681,7 @@ public abstract class BaseFont
     {
         if (directTextToByte)
         {
-            return PdfEncodings.ConvertToBytes(text, null);
+            return PdfEncodings.ConvertToBytes(text, encoding: null);
         }
 
         if (SpecialMap != null)
@@ -1570,9 +1689,11 @@ public abstract class BaseFont
             var b = new byte[text.Length];
             var ptr = 0;
             var length = text.Length;
+
             for (var k = 0; k < length; ++k)
             {
                 var c = text[k];
+
                 if (SpecialMap.TryGetValue(c, out var value))
                 {
                     b[ptr++] = (byte)value;
@@ -1582,7 +1703,10 @@ public abstract class BaseFont
             if (ptr < length)
             {
                 var b2 = new byte[ptr];
-                Array.Copy(b, 0, b2, 0, ptr);
+
+                Array.Copy(b, sourceIndex: 0, b2,
+                    destinationIndex: 0, ptr);
+
                 return b2;
             }
 
@@ -1602,14 +1726,17 @@ public abstract class BaseFont
     {
         if (directTextToByte)
         {
-            return PdfEncodings.ConvertToBytes((char)char1, null);
+            return PdfEncodings.ConvertToBytes((char)char1, encoding: null);
         }
 
         if (SpecialMap != null)
         {
             if (SpecialMap.TryGetValue(char1, out var value))
             {
-                return new[] { (byte)value };
+                return new[]
+                {
+                    (byte)value
+                };
             }
 
             return Array.Empty<byte>();
@@ -1656,19 +1783,19 @@ public abstract class BaseFont
             throw new ArgumentNullException(nameof(name));
         }
 
-        if (name.EndsWith(",Bold", StringComparison.OrdinalIgnoreCase))
+        if (name.EndsWith(value: ",Bold", StringComparison.OrdinalIgnoreCase))
         {
-            return name.Substring(0, name.Length - 5);
+            return name.Substring(startIndex: 0, name.Length - 5);
         }
 
-        if (name.EndsWith(",Italic", StringComparison.OrdinalIgnoreCase))
+        if (name.EndsWith(value: ",Italic", StringComparison.OrdinalIgnoreCase))
         {
-            return name.Substring(0, name.Length - 7);
+            return name.Substring(startIndex: 0, name.Length - 7);
         }
 
-        if (name.EndsWith(",BoldItalic", StringComparison.OrdinalIgnoreCase))
+        if (name.EndsWith(value: ",BoldItalic", StringComparison.OrdinalIgnoreCase))
         {
-            return name.Substring(0, name.Length - 11);
+            return name.Substring(startIndex: 0, name.Length - 11);
         }
 
         return name;
@@ -1682,17 +1809,18 @@ public abstract class BaseFont
     /// <returns>the normalized encoding</returns>
     protected static string NormalizeEncoding(string enc)
     {
-        if (string.IsNullOrEmpty(enc) || enc.Equals("winansi", StringComparison.Ordinal))
+        if (string.IsNullOrEmpty(enc) || enc.Equals(value: "winansi", StringComparison.Ordinal))
         {
             return CP1252;
         }
 
-        if (enc.Equals("macroman", StringComparison.Ordinal))
+        if (enc.Equals(value: "macroman", StringComparison.Ordinal))
         {
             return MACROMAN;
         }
 
         var n = IanaEncodings.GetEncodingNumber(enc);
+
         if (n == 1252)
         {
             return CP1252;
@@ -1712,22 +1840,31 @@ public abstract class BaseFont
     /// </summary>
     protected void CreateEncoding()
     {
-        if (encoding.StartsWith("#", StringComparison.Ordinal))
+        if (encoding.StartsWith(value: '#'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																			
+		))
         {
             SpecialMap = new NullValueDictionary<int, int>();
-            var tok = new StringTokenizer(encoding.Substring(1), " ,\t\n\r\f");
-            if (tok.NextToken().Equals("full", StringComparison.Ordinal))
+            var tok = new StringTokenizer(encoding.Substring(startIndex: 1), delim: " ,\t\n\r\f");
+
+            if (tok.NextToken().Equals(value: "full", StringComparison.Ordinal))
             {
                 while (tok.HasMoreTokens())
                 {
                     var order = tok.NextToken();
                     var name = tok.NextToken();
-                    var uni = (char)int.Parse(tok.NextToken(), NumberStyles.HexNumber,
-                                              CultureInfo.InvariantCulture);
+                    var uni = (char)int.Parse(tok.NextToken(), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                     int orderK;
-                    if (order.StartsWith("'", StringComparison.Ordinal))
+
+                    if (order.StartsWith(value: '\''
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																						
+					))
                     {
-                        orderK = order[1];
+                        orderK = order[index: 1];
                     }
                     else
                     {
@@ -1745,6 +1882,7 @@ public abstract class BaseFont
             else
             {
                 var k = 0;
+
                 if (tok.HasMoreTokens())
                 {
                     k = int.Parse(tok.NextToken(), CultureInfo.InvariantCulture);
@@ -1755,6 +1893,7 @@ public abstract class BaseFont
                     var hex = tok.NextToken();
                     var uni = int.Parse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture) % 0x10000;
                     var name = GlyphList.UnicodeToName(uni);
+
                     if (name != null)
                     {
                         SpecialMap[uni] = k;
@@ -1779,8 +1918,8 @@ public abstract class BaseFont
         {
             for (var k = 0; k < 256; ++k)
             {
-                widths[k] = GetRawWidth(k, null);
-                CharBBoxes[k] = GetRawCharBBox(k, null);
+                widths[k] = GetRawWidth(k, name: null);
+                CharBBoxes[k] = GetRawCharBBox(k, name: null);
             }
         }
         else
@@ -1789,13 +1928,15 @@ public abstract class BaseFont
             string name;
             char c;
             var b = new byte[1];
+
             for (var k = 0; k < 256; ++k)
             {
                 b[0] = (byte)k;
                 s = PdfEncodings.ConvertToString(b, encoding);
+
                 if (s.Length > 0)
                 {
-                    c = s[0];
+                    c = s[index: 0];
                 }
                 else
                 {
@@ -1803,6 +1944,7 @@ public abstract class BaseFont
                 }
 
                 name = GlyphList.UnicodeToName(c);
+
                 if (name == null)
                 {
                     name = notdef;
@@ -1821,6 +1963,7 @@ public abstract class BaseFont
     private static void addFont(PrIndirectReference fontRef, NullValueDictionary<int, int> hits, List<object[]> fonts)
     {
         var obj = PdfReader.GetPdfObject(fontRef);
+
         if (obj == null || !obj.IsDictionary())
         {
             return;
@@ -1828,43 +1971,55 @@ public abstract class BaseFont
 
         var font = (PdfDictionary)obj;
         var subtype = font.GetAsName(PdfName.Subtype);
+
         if (!PdfName.Type1.Equals(subtype) && !PdfName.Truetype.Equals(subtype))
         {
             return;
         }
 
         var name = font.GetAsName(PdfName.Basefont);
-        fonts.Add(new object[] { PdfName.DecodeName(name.ToString()), fontRef });
+
+        fonts.Add(new object[]
+        {
+            PdfName.DecodeName(name.ToString()),
+            fontRef
+        });
+
         hits[fontRef.Number] = 1;
     }
 
     private static void recourseFonts(PdfDictionary page, NullValueDictionary<int, int> hits, List<object[]> fonts,
-                                      int level)
+        int level)
     {
         ++level;
+
         if (level > 50) // in case we have an endless loop
         {
             return;
         }
 
         var resources = page.GetAsDict(PdfName.Resources);
+
         if (resources == null)
         {
             return;
         }
 
         var font = resources.GetAsDict(PdfName.Font);
+
         if (font != null)
         {
             foreach (var key in font.Keys)
             {
                 var ft = font.Get(key);
+
                 if (ft == null || !ft.IsIndirect())
                 {
                     continue;
                 }
 
                 var hit = ((PrIndirectReference)ft).Number;
+
                 if (hits.ContainsKey(hit))
                 {
                     continue;
@@ -1875,11 +2030,13 @@ public abstract class BaseFont
         }
 
         var xobj = resources.GetAsDict(PdfName.Xobject);
+
         if (xobj != null)
         {
             foreach (var key in xobj.Keys)
             {
-                recourseFonts(xobj.GetAsDict(key), hits, fonts, level);
+                recourseFonts(xobj.GetAsDict(key), hits, fonts,
+                    level);
             }
         }
     }
@@ -1903,6 +2060,7 @@ public abstract class BaseFont
         {
             Bytes = contents;
             Put(PdfName.LENGTH, new PdfNumber(Bytes.Length));
+
             for (var k = 0; k < lengths.Length; ++k)
             {
                 Put(new PdfName("Length" + (k + 1)), new PdfNumber(lengths[k]));
@@ -1923,6 +2081,7 @@ public abstract class BaseFont
         {
             Bytes = contents;
             Put(PdfName.LENGTH, new PdfNumber(Bytes.Length));
+
             if (subType != null)
             {
                 Put(PdfName.Subtype, new PdfName(subType));

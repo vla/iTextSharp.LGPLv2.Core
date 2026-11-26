@@ -123,7 +123,6 @@ public sealed class SimpleNamedDestination : ISimpleXmlDocHandler
             if (c < ' ')
             {
                 buf.Append(value: '\\');
-                ((int)c).ToString(format: "", CultureInfo.InvariantCulture);
                 var octal = "00" + Convert.ToString(c, toBase: 8);
                 buf.Append(octal.Substring(octal.Length - 3));
             }
@@ -427,7 +426,11 @@ public sealed class SimpleNamedDestination : ISimpleXmlDocHandler
         {
             var fn = tk.NextToken();
 
-            if (fn.StartsWith(value: "/", StringComparison.Ordinal))
+            if (fn.StartsWith(value: '/'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																									
+			))
             {
                 fn = fn.Substring(startIndex: 1);
             }

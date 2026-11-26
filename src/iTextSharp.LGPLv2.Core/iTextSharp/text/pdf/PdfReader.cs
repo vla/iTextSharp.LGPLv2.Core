@@ -9,6 +9,7 @@ using iTextSharp.text.pdf.intern;
 using Org.BouncyCastle.Cms;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.X509;
+using InvalidOperationException = System.InvalidOperationException;
 
 namespace iTextSharp.text.pdf;
 
@@ -19,9 +20,9 @@ namespace iTextSharp.text.pdf;
 /// </summary>
 public class PdfReader : IPdfViewerPreferences, IDisposable
 {
-    private static readonly byte[] _endobj = PdfEncodings.ConvertToBytes("endobj", null);
+    private static readonly byte[] _endobj = PdfEncodings.ConvertToBytes(text: "endobj", encoding: null);
 
-    private static readonly byte[] _endstream = PdfEncodings.ConvertToBytes("endstream", null);
+    private static readonly byte[] _endstream = PdfEncodings.ConvertToBytes(text: "endstream", encoding: null);
 
     private static readonly PdfName[] _pageInhCandidates =
     {
@@ -35,6 +36,51 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
     private readonly bool _partial;
     private readonly PdfViewerPreferencesImp _viewerPreferences = new();
+
+    internal protected bool AcroFormParsed;
+
+    protected X509Certificate Certificate;
+
+    //added by ujihara for decryption
+    protected ICipherParameters CertificateKey;
+
+    internal protected bool Encrypted;
+
+    internal protected int FreeXref;
+
+    internal protected bool NewXrefType;
+
+    internal protected INullValueDictionary<int, NullValueDictionary<int, int>> ObjStmMark;
+
+    internal protected NullValueDictionary<int, int> ObjStmToOffset;
+
+    internal protected int PValue;
+
+    internal protected byte[] Password;
+
+    internal protected int RValue;
+
+    internal protected bool Rebuilt;
+
+    internal protected bool SharedStreams = true;
+
+    internal protected List<PdfString> Strings = new();
+
+    internal protected PrTokeniser Tokens;
+
+    /// <summary>
+    ///     Each xref pair is a position
+    /// </summary>
+    /// <summary>
+    ///     type 0 -> -1, 0
+    /// </summary>
+    /// <summary>
+    ///     type 1 -> offset, 0
+    /// </summary>
+    /// <summary>
+    ///     type 2 -> index, obj num
+    /// </summary>
+    internal protected int[] Xref;
 
     /// <summary>
     ///     Holds value of property appendable.
@@ -70,79 +116,34 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     private PdfDictionary _rootPages;
     private List<PdfObject> _xrefObj;
 
-    protected internal PrAcroForm acroForm;
+    internal protected PrAcroForm acroForm;
 
-    protected internal bool AcroFormParsed;
+    internal protected PdfDictionary catalog;
 
-    protected internal PdfDictionary catalog;
+    internal protected bool consolidateNamedDestinations;
 
-    protected X509Certificate Certificate;
+    internal protected PdfEncryption decrypt;
 
-    //added by ujihara for decryption
-    protected ICipherParameters CertificateKey;
+    internal protected int eofPos;
 
-    protected internal bool consolidateNamedDestinations;
+    internal protected int lastXref;
 
-    protected internal PdfEncryption decrypt;
+    internal protected PageRefs pageRefs;
 
-    protected internal bool Encrypted;
+    internal protected char pdfVersion;
 
-    protected internal int eofPos;
+    internal protected bool tampered;
 
-    protected internal int FreeXref;
+    internal protected PdfDictionary trailer;
 
-    protected internal int lastXref;
-
-    protected internal bool NewXrefType;
-
-    protected internal INullValueDictionary<int, NullValueDictionary<int, int>> ObjStmMark;
-
-    protected internal NullValueDictionary<int, int> ObjStmToOffset;
-
-    protected internal PageRefs pageRefs;
-
-    protected internal byte[] Password;
-
-    protected internal char pdfVersion;
-
-    protected internal int PValue;
-
-    protected internal bool Rebuilt;
-
-    protected internal int RValue;
-
-    protected internal bool SharedStreams = true;
-
-    protected internal List<PdfString> Strings = new();
-
-    protected internal bool tampered;
-
-    protected internal PrTokeniser Tokens;
-
-    protected internal PdfDictionary trailer;
-
-    /// <summary>
-    ///     Each xref pair is a position
-    /// </summary>
-    /// <summary>
-    ///     type 0 -> -1, 0
-    /// </summary>
-    /// <summary>
-    ///     type 1 -> offset, 0
-    /// </summary>
-    /// <summary>
-    ///     type 2 -> index, obj num
-    /// </summary>
-    protected internal int[] Xref;
-
-    protected internal List<int> xrefByteOffset = new();
+    internal protected List<int> xrefByteOffset = new();
 
     /// <summary>
     ///     Reads and parses a PDF document.
     ///     @throws IOException on error
     /// </summary>
     /// <param name="filename">the file name of the document</param>
-    public PdfReader(string filename) : this(filename, null)
+    public PdfReader(string filename) : this(filename, (byte[])null)
     {
     }
 
@@ -163,8 +164,18 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     ///     Reads and parses a PDF document.
     ///     @throws IOException on error
     /// </summary>
+    /// <param name="filename">the file name of the document</param>
+    /// <param name="ownerPassword">the password to read the document</param>
+    public PdfReader(string filename, string ownerPassword) : this(filename, ownerPassword.GetIsoBytes())
+    {
+    }
+
+    /// <summary>
+    ///     Reads and parses a PDF document.
+    ///     @throws IOException on error
+    /// </summary>
     /// <param name="pdfIn">the byte array with the document</param>
-    public PdfReader(byte[] pdfIn) : this(pdfIn, null)
+    public PdfReader(byte[] pdfIn) : this(pdfIn, ownerPassword: null)
     {
     }
 
@@ -201,7 +212,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     ///     @throws IOException on error
     /// </summary>
     /// <param name="url">the Uri of the document</param>
-    public PdfReader(Uri url) : this(url, null)
+    public PdfReader(Uri url) : this(url, ownerPassword: null)
     {
     }
 
@@ -240,7 +251,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     /// </summary>
     /// <param name="isp">the  InputStream  containing the document. The stream is read to the</param>
     /// <param name="forceRead">force the read of the entire stream, even it's a FileStream</param>
-    public PdfReader(Stream isp, bool forceRead = true) : this(isp, null, forceRead)
+    public PdfReader(Stream isp, bool forceRead = true) : this(isp, ownerPassword: null, forceRead)
     {
     }
 
@@ -324,7 +335,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         ReadPdf();
     }
 
-    protected internal PdfReader()
+    internal protected PdfReader()
     {
     }
 
@@ -332,7 +343,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     ///     Gets a read-only version of  AcroFields .
     /// </summary>
     /// <returns>a read-only version of  AcroFields </returns>
-    public AcroFields AcroFields => new(this, null);
+    public AcroFields AcroFields => new(this, writer: null);
 
     /// <summary>
     ///     Returns the document's acroform, if it has one.
@@ -367,6 +378,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
     public bool Appendable
     {
+        get => _appendable;
         set
         {
             _appendable = value;
@@ -376,7 +388,6 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 GetPdfObject(trailer.Get(PdfName.Root));
             }
         }
-        get => _appendable;
     }
 
     /// <summary>
@@ -667,17 +678,17 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (ch == 'z' && state == 0)
             {
-                outp.WriteByte(0);
-                outp.WriteByte(0);
-                outp.WriteByte(0);
-                outp.WriteByte(0);
+                outp.WriteByte(value: 0);
+                outp.WriteByte(value: 0);
+                outp.WriteByte(value: 0);
+                outp.WriteByte(value: 0);
 
                 continue;
             }
 
             if (ch < '!' || ch > 'u')
             {
-                throw new ArgumentException("Illegal character in ASCII85Decode.");
+                throw new InvalidOperationException(message: "Illegal character in ASCII85Decode.");
             }
 
             chn[state] = ch - '!';
@@ -761,7 +772,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (n == -1)
             {
-                throw new ArgumentException("Illegal character in ASCIIHexDecode.");
+                throw new InvalidOperationException(message: "Illegal character in ASCIIHexDecode.");
             }
 
             if (first)
@@ -949,10 +960,10 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     break;
                 default:
                     // Error -- uknown filter type
-                    throw new InvalidOperationException("PNG filter unknown.");
+                    throw new InvalidOperationException(message: "PNG filter unknown.");
             }
 
-            fout.Write(curr, 0, curr.Length);
+            fout.Write(curr, offset: 0, curr.Length);
 
             // Swap curr and prior
             var tmp = prior;
@@ -968,11 +979,11 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     /// <returns>the decoded data</returns>
     public static byte[] FlateDecode(byte[] inp)
     {
-        var b = FlateDecode(inp, true);
+        var b = FlateDecode(inp, strict: true);
 
         if (b == null)
         {
-            return FlateDecode(inp, false);
+            return FlateDecode(inp, strict: false);
         }
 
         return b;
@@ -996,9 +1007,9 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         {
             int n;
 
-            while ((n = zip.Read(b, 0, b.Length)) > 0)
+            while ((n = zip.Read(b, offset: 0, b.Length)) > 0)
             {
-                outp.Write(b, 0, n);
+                outp.Write(b, offset: 0, n);
             }
 
             return outp.ToArray();
@@ -1026,10 +1037,10 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             throw new ArgumentNullException(nameof(box));
         }
 
-        var llx = ((PdfNumber)GetPdfObjectRelease(box[0])).FloatValue;
-        var lly = ((PdfNumber)GetPdfObjectRelease(box[1])).FloatValue;
-        var urx = ((PdfNumber)GetPdfObjectRelease(box[2])).FloatValue;
-        var ury = ((PdfNumber)GetPdfObjectRelease(box[3])).FloatValue;
+        var llx = ((PdfNumber)GetPdfObjectRelease(box[idx: 0])).FloatValue;
+        var lly = ((PdfNumber)GetPdfObjectRelease(box[idx: 1])).FloatValue;
+        var urx = ((PdfNumber)GetPdfObjectRelease(box[idx: 2])).FloatValue;
+        var ury = ((PdfNumber)GetPdfObjectRelease(box[idx: 3])).FloatValue;
 
         return new Rectangle(Math.Min(llx, urx), Math.Min(lly, ury), Math.Max(llx, urx), Math.Max(lly, ury));
     }
@@ -1213,7 +1224,8 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         {
             name = ((PdfName)GetPdfObjectRelease(filters[j])).ToString();
 
-            if (name.Equals("/FlateDecode", StringComparison.Ordinal) || name.Equals("/Fl", StringComparison.Ordinal))
+            if (name.Equals(value: "/FlateDecode", StringComparison.Ordinal) ||
+                name.Equals(value: "/Fl", StringComparison.Ordinal))
             {
                 b = FlateDecode(b);
                 PdfObject dicParam = null;
@@ -1224,17 +1236,17 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     b = DecodePredictor(b, dicParam);
                 }
             }
-            else if (name.Equals("/ASCIIHexDecode", StringComparison.Ordinal) ||
-                     name.Equals("/AHx", StringComparison.Ordinal))
+            else if (name.Equals(value: "/ASCIIHexDecode", StringComparison.Ordinal) ||
+                     name.Equals(value: "/AHx", StringComparison.Ordinal))
             {
                 b = AsciiHexDecode(b);
             }
-            else if (name.Equals("/ASCII85Decode", StringComparison.Ordinal) ||
-                     name.Equals("/A85", StringComparison.Ordinal))
+            else if (name.Equals(value: "/ASCII85Decode", StringComparison.Ordinal) ||
+                     name.Equals(value: "/A85", StringComparison.Ordinal))
             {
                 b = Ascii85Decode(b);
             }
-            else if (name.Equals("/LZWDecode", StringComparison.Ordinal))
+            else if (name.Equals(value: "/LZWDecode", StringComparison.Ordinal))
             {
                 b = LzwDecode(b);
                 PdfObject dicParam = null;
@@ -1245,7 +1257,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     b = DecodePredictor(b, dicParam);
                 }
             }
-            else if (name.Equals("/Crypt", StringComparison.Ordinal))
+            else if (name.Equals(value: "/Crypt", StringComparison.Ordinal))
             {
             }
             else
@@ -1321,9 +1333,9 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             b = new byte[stream.Length];
             file.Seek(stream.Offset);
             file.ReadFully(b);
-            var decrypt = reader.Decrypt;
+            var readerDecrypt = reader.Decrypt;
 
-            if (decrypt != null)
+            if (readerDecrypt != null)
             {
                 var filter = GetPdfObjectRelease(stream.Get(PdfName.Filter));
                 IList<PdfObject> filters = new List<PdfObject>();
@@ -1346,7 +1358,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 {
                     var obj = GetPdfObjectRelease(filters[k]);
 
-                    if (obj != null && obj.ToString().Equals("/Crypt", StringComparison.Ordinal))
+                    if (obj != null && obj.ToString().Equals(value: "/Crypt", StringComparison.Ordinal))
                     {
                         skip = true;
 
@@ -1356,8 +1368,8 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                 if (!skip)
                 {
-                    decrypt.SetHashKey(stream.ObjNum, stream.ObjGen);
-                    b = decrypt.DecryptByteArray(b);
+                    readerDecrypt.SetHashKey(stream.ObjNum, stream.ObjGen);
+                    b = readerDecrypt.DecryptByteArray(b);
                 }
             }
         }
@@ -1519,7 +1531,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
 
         consolidateNamedDestinations = true;
-        var names = GetNamedDestination(true);
+        var names = GetNamedDestination(keepNames: true);
 
         if (names.Count == 0)
         {
@@ -1704,7 +1716,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 {
                     // need to duplicate
                     newRefs.Add(refi);
-                    newStreams.Add(new PrStream((PrStream)contents, null));
+                    newStreams.Add(new PrStream((PrStream)contents, newDic: null));
                 }
                 else
                 {
@@ -1723,7 +1735,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     {
                         // need to duplicate
                         newRefs.Add(refi);
-                        newStreams.Add(new PrStream((PrStream)GetPdfObject(refi), null));
+                        newStreams.Add(new PrStream((PrStream)GetPdfObject(refi), newDic: null));
                     }
                     else
                     {
@@ -1742,7 +1754,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         {
             _xrefObj.Add(newStreams[k]);
             var refi = newRefs[k];
-            refi.SetNumber(_xrefObj.Count - 1, 0);
+            refi.SetNumber(_xrefObj.Count - 1, generation: 0);
         }
     }
 
@@ -1762,23 +1774,23 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         var page = pageRefs.GetPageNRelease(index);
         PdfArray box = null;
 
-        if (boxName.Equals("trim", StringComparison.Ordinal))
+        if (boxName.Equals(value: "trim", StringComparison.Ordinal))
         {
             box = (PdfArray)GetPdfObjectRelease(page.Get(PdfName.Trimbox));
         }
-        else if (boxName.Equals("art", StringComparison.Ordinal))
+        else if (boxName.Equals(value: "art", StringComparison.Ordinal))
         {
             box = (PdfArray)GetPdfObjectRelease(page.Get(PdfName.Artbox));
         }
-        else if (boxName.Equals("bleed", StringComparison.Ordinal))
+        else if (boxName.Equals(value: "bleed", StringComparison.Ordinal))
         {
             box = (PdfArray)GetPdfObjectRelease(page.Get(PdfName.Bleedbox));
         }
-        else if (boxName.Equals("crop", StringComparison.Ordinal))
+        else if (boxName.Equals(value: "crop", StringComparison.Ordinal))
         {
             box = (PdfArray)GetPdfObjectRelease(page.Get(PdfName.Cropbox));
         }
-        else if (boxName.Equals("media", StringComparison.Ordinal))
+        else if (boxName.Equals(value: "media", StringComparison.Ordinal))
         {
             box = (PdfArray)GetPdfObjectRelease(page.Get(PdfName.Mediabox));
         }
@@ -1822,7 +1834,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             return PdfSignatureAppearance.NOT_CERTIFIED;
         }
 
-        dic = arr.GetAsDict(0);
+        dic = arr.GetAsDict(idx: 0);
 
         if (dic == null)
         {
@@ -1902,8 +1914,8 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         var jscript = PdfNameTree.ReadTree(js);
         var sortedNames = new string[jscript.Count];
-        jscript.Keys.CopyTo(sortedNames, 0);
-        Array.Sort(sortedNames);
+        jscript.Keys.CopyTo(sortedNames, arrayIndex: 0);
+        Array.Sort(sortedNames, StringComparer.Ordinal);
         var buf = new StringBuilder();
 
         for (var k = 0; k < sortedNames.Length; ++k)
@@ -1921,7 +1933,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             {
                 if (obj.IsString())
                 {
-                    buf.Append(((PdfString)obj).ToUnicodeString()).Append('\n');
+                    buf.Append(((PdfString)obj).ToUnicodeString()).Append(value: '\n');
                 }
                 else if (obj.IsStream())
                 {
@@ -1936,7 +1948,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                         buf.Append(PdfEncodings.ConvertToString(bytes, PdfObject.TEXT_PDFDOCENCODING));
                     }
 
-                    buf.Append('\n');
+                    buf.Append(value: '\n');
                 }
             }
         }
@@ -1976,7 +1988,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     ///     and the value is the destinations array.
     /// </summary>
     /// <returns>gets all the named destinations</returns>
-    public INullValueDictionary<object, PdfObject> GetNamedDestination() => GetNamedDestination(false);
+    public INullValueDictionary<object, PdfObject> GetNamedDestination() => GetNamedDestination(keepNames: false);
 
     /// <summary>
     ///     Gets all the named destinations as an  HashMap . The key is the name
@@ -2007,7 +2019,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
     {
         var ret = new NullValueDictionary<string, PdfObject>();
 
-        foreach (var s in GetNamedDestinationFromNames(false))
+        foreach (var s in GetNamedDestinationFromNames(keepNames: false))
         {
             ret[(string)s.Key] = s.Value;
         }
@@ -2078,7 +2090,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 {
                     var names = PdfNameTree.ReadTree(dic);
                     var keys = new string[names.Count];
-                    names.Keys.CopyTo(keys, 0);
+                    names.Keys.CopyTo(keys, arrayIndex: 0);
 
                     foreach (var key in keys)
                     {
@@ -2145,7 +2157,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
 
                 var b = GetStreamBytes((PrStream)item, file);
-                bout.Write(b, 0, b.Length);
+                bout.Write(b, offset: 0, b.Length);
 
                 if (k != array.Size - 1)
                 {
@@ -2591,7 +2603,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (FreeXref == -1)
         {
-            _xrefObj.Add(null);
+            _xrefObj.Add(item: null);
             FreeXref = _xrefObj.Count - 1;
         }
 
@@ -2634,7 +2646,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     continue;
                 }
 
-                var ns = BaseFont.CreateSubsetPrefix() + s.Substring(7);
+                var ns = BaseFont.CreateSubsetPrefix() + s.Substring(startIndex: 7);
                 var newName = new PdfName(ns);
                 dic.Put(PdfName.Basefont, newName);
                 setXrefPartialObject(k, dic);
@@ -2663,7 +2675,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     continue;
                 }
 
-                var desc = arr.GetAsDict(0);
+                var desc = arr.GetAsDict(idx: 0);
                 var sde = GetSubsetPrefix(desc);
 
                 if (sde == null)
@@ -2675,11 +2687,11 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                 if (s != null)
                 {
-                    dic.Put(PdfName.Basefont, new PdfName(ns + s.Substring(7)));
+                    dic.Put(PdfName.Basefont, new PdfName(ns + s.Substring(startIndex: 7)));
                 }
 
                 setXrefPartialObject(k, dic);
-                var newName = new PdfName(ns + sde.Substring(7));
+                var newName = new PdfName(ns + sde.Substring(startIndex: 7));
                 desc.Put(PdfName.Basefont, newName);
                 ++total;
                 var fd = desc.GetAsDict(PdfName.Fontdescriptor);
@@ -2756,7 +2768,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             return null;
         }
 
-        if (s.Length < 8 || s[6] != '+')
+        if (s.Length < 8 || s[index: 6] != '+')
         {
             return null;
         }
@@ -2781,7 +2793,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             return null;
         }
 
-        return new PdfIndirectReference(0, _cryptoRef.Number, _cryptoRef.Generation);
+        return new PdfIndirectReference(type: 0, _cryptoRef.Number, _cryptoRef.Generation);
     }
 
     internal static int GetPageRotation(PdfDictionary page)
@@ -2801,7 +2813,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
     internal virtual void SetViewerPreferences(PdfViewerPreferencesImp vp) => vp.AddToCatalog(catalog);
 
-    protected internal static PdfDictionary DuplicatePdfDictionary(PdfDictionary original,
+    internal protected static PdfDictionary DuplicatePdfDictionary(PdfDictionary original,
         PdfDictionary copy,
         PdfReader newReader)
     {
@@ -2823,7 +2835,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         return copy;
     }
 
-    protected internal static PdfObject DuplicatePdfObject(PdfObject original, PdfReader newReader)
+    internal protected static PdfObject DuplicatePdfObject(PdfObject original, PdfReader newReader)
     {
         if (original == null)
         {
@@ -2834,12 +2846,12 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         {
             case PdfObject.DICTIONARY:
             {
-                return DuplicatePdfDictionary((PdfDictionary)original, null, newReader);
+                return DuplicatePdfDictionary((PdfDictionary)original, copy: null, newReader);
             }
             case PdfObject.STREAM:
             {
                 var org = (PrStream)original;
-                var stream = new PrStream(org, null, newReader);
+                var stream = new PrStream(org, newDic: null, newReader);
                 DuplicatePdfDictionary(org, stream, newReader);
 
                 return stream;
@@ -2866,9 +2878,9 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal PdfReaderInstance GetPdfReaderInstance(PdfWriter writer) => new(this, writer);
+    internal protected PdfReaderInstance GetPdfReaderInstance(PdfWriter writer) => new(this, writer);
 
-    protected internal void KillXref(PdfObject obj)
+    internal protected void KillXref(PdfObject obj)
     {
         if (obj == null)
         {
@@ -2918,7 +2930,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal PdfArray ReadArray()
+    internal protected PdfArray ReadArray()
     {
         var array = new PdfArray();
 
@@ -2942,7 +2954,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (-type == PrTokeniser.TK_END_DIC)
             {
-                Tokens.ThrowError("Unexpected '>>'");
+                Tokens.ThrowError(error: "Unexpected '>>'");
             }
 
             array.Add(obj);
@@ -2951,7 +2963,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         return array;
     }
 
-    protected internal PdfDictionary ReadDictionary()
+    internal protected PdfDictionary ReadDictionary()
     {
         var dic = new PdfDictionary();
 
@@ -2967,21 +2979,21 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (Tokens.TokenType != PrTokeniser.TK_NAME)
             {
-                Tokens.ThrowError("Dictionary key is not a name.");
+                Tokens.ThrowError(error: "Dictionary key is not a name.");
             }
 
-            var name = new PdfName(Tokens.StringValue, false);
+            var name = new PdfName(Tokens.StringValue, lengthCheck: false);
             var obj = ReadPrObject();
             var type = obj.Type;
 
             if (-type == PrTokeniser.TK_END_DIC)
             {
-                Tokens.ThrowError("Unexpected '>>'");
+                Tokens.ThrowError(error: "Unexpected '>>'");
             }
 
             if (-type == PrTokeniser.TK_END_ARRAY)
             {
-                Tokens.ThrowError("Unexpected ']'");
+                Tokens.ThrowError(error: "Unexpected ']'");
             }
 
             dic.Put(name, obj);
@@ -2990,14 +3002,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         return dic;
     }
 
-    protected internal void ReadDocObj()
+    internal protected void ReadDocObj()
     {
         List<PrStream> streams = new();
         _xrefObj = new List<PdfObject>(Xref.Length / 2);
 
         for (var k = 0; k < Xref.Length / 2; ++k)
         {
-            _xrefObj.Add(null);
+            _xrefObj.Add(item: null);
         }
 
         for (var k = 2; k < Xref.Length; k += 2)
@@ -3014,7 +3026,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
             {
-                Tokens.ThrowError("Invalid object number.");
+                Tokens.ThrowError(error: "Invalid object number.");
             }
 
             _objNum = Tokens.IntValue;
@@ -3022,15 +3034,15 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
             {
-                Tokens.ThrowError("Invalid generation number.");
+                Tokens.ThrowError(error: "Invalid generation number.");
             }
 
             _objGen = Tokens.IntValue;
             Tokens.NextValidToken();
 
-            if (!Tokens.StringValue.Equals("obj", StringComparison.Ordinal))
+            if (!Tokens.StringValue.Equals(value: "obj", StringComparison.Ordinal))
             {
-                Tokens.ThrowError("Token 'obj' expected.");
+                Tokens.ThrowError(error: "Token 'obj' expected.");
             }
 
             PdfObject obj;
@@ -3075,13 +3087,13 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         Xref = null;
     }
 
-    protected internal void ReadDocObjPartial()
+    internal protected void ReadDocObjPartial()
     {
         _xrefObj = new List<PdfObject>(Xref.Length / 2);
 
         for (var k = 0; k < Xref.Length / 2; ++k)
         {
-            _xrefObj.Add(null);
+            _xrefObj.Add(item: null);
         }
 
         readDecryptedDocObj();
@@ -3099,7 +3111,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal void ReadObjStm(PrStream stream, NullValueDictionary<int, int> map)
+    internal protected void ReadObjStm(PrStream stream, NullValueDictionary<int, int> map)
     {
         if (stream == null)
         {
@@ -3159,7 +3171,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (!ok)
             {
-                throw new InvalidPdfException("Error reading ObjStm");
+                throw new InvalidPdfException(message: "Error reading ObjStm");
             }
 
             for (var k = 0; k < n; ++k)
@@ -3190,7 +3202,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal PdfObject ReadOneObjStm(PrStream stream, int idx)
+    internal protected PdfObject ReadOneObjStm(PrStream stream, int idx)
     {
         if (stream == null)
         {
@@ -3243,7 +3255,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (!ok)
             {
-                throw new InvalidPdfException("Error reading ObjStm");
+                throw new InvalidPdfException(message: "Error reading ObjStm");
             }
 
             Tokens.Seek(address);
@@ -3256,20 +3268,20 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal void ReadPages()
+    internal protected void ReadPages()
     {
         catalog = trailer?.GetAsDict(PdfName.Root);
 
         if (catalog == null)
         {
-            throw new InvalidPdfException("This invalid PDF file doesn't have a catalog.");
+            throw new InvalidPdfException(message: "This invalid PDF file doesn't have a catalog.");
         }
 
         _rootPages = catalog.GetAsDict(PdfName.Pages);
 
         if (_rootPages == null || !HasRootPage())
         {
-            throw new InvalidPdfException("This invalid PDF file doesn't have a page root.");
+            throw new InvalidPdfException(message: "This invalid PDF file doesn't have a page root.");
         }
 
         pageRefs = new PageRefs(this);
@@ -3283,7 +3295,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         return PdfName.Pages.Equals(type) || PdfName.Pages.Equals(types);
     }
 
-    protected internal virtual void ReadPdf()
+    internal protected virtual void ReadPdf()
     {
         try
         {
@@ -3292,7 +3304,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             try
             {
-                if (_bBailout == false)
+                if (!_bBailout)
                 {
                     ReadXref();
                 }
@@ -3307,13 +3319,13 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
                 catch (Exception ne)
                 {
-                    throw new InvalidPdfException("Rebuild failed: " + ne.Message + "; Original message: " + e.Message);
+                    throw new InvalidPdfException("Rebuild failed: " + ne.Message + "; Original message: " + e.Message, ne);
                 }
             }
 
             try
             {
-                if (_bBailout == false)
+                if (!_bBailout)
                 {
                     ReadDocObj();
                 }
@@ -3322,7 +3334,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             {
                 if (ne is BadPasswordException)
                 {
-                    throw new BadPasswordException(ne.Message);
+                    throw new BadPasswordException(ne.Message, ne);
                 }
 
                 if (Rebuilt || _encryptionError)
@@ -3355,7 +3367,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal void ReadPdfPartial()
+    internal protected void ReadPdfPartial()
     {
         try
         {
@@ -3364,7 +3376,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             try
             {
-                if (_bBailout == false)
+                if (!_bBailout)
                 {
                     ReadXref();
                 }
@@ -3379,11 +3391,11 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
                 catch (Exception ne)
                 {
-                    throw new InvalidPdfException("Rebuild failed: " + ne.Message + "; Original message: " + e.Message);
+                    throw new InvalidPdfException("Rebuild failed: " + ne.Message + "; Original message: " + e.Message, ne);
                 }
             }
 
-            if (_bBailout == false)
+            if (!_bBailout)
             {
                 ReadDocObjPartial();
                 ReadPages();
@@ -3403,7 +3415,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal PdfObject ReadPrObject()
+    internal protected PdfObject ReadPrObject()
     {
         Tokens.NextValidToken();
         var type = Tokens.TokenType;
@@ -3426,7 +3438,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
                 while (hasNext && Tokens.TokenType == PrTokeniser.TK_COMMENT);
 
-                if (hasNext && Tokens.StringValue.Equals("stream", StringComparison.Ordinal))
+                if (hasNext && Tokens.StringValue.Equals(value: "stream", StringComparison.Ordinal))
                 {
                     //skip whitespaces
                     int ch;
@@ -3470,7 +3482,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             case PrTokeniser.TK_NUMBER:
                 return new PdfNumber(Tokens.StringValue);
             case PrTokeniser.TK_STRING:
-                var str = new PdfString(Tokens.StringValue, null).SetHexWriting(Tokens.IsHexString());
+                var str = new PdfString(Tokens.StringValue, encoding: null).SetHexWriting(Tokens.IsHexString());
                 str.SetObjNum(_objNum, _objGen);
 
                 if (Strings != null)
@@ -3489,7 +3501,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
 
                 // an indirect name (how odd...), or a non-standard one
-                return new PdfName(Tokens.StringValue, false);
+                return new PdfName(Tokens.StringValue, lengthCheck: false);
             }
             case PrTokeniser.TK_REF:
                 var num = Tokens.Reference;
@@ -3513,7 +3525,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 {
                     if (_readDepth == 0)
                     {
-                        return new PdfBoolean(true);
+                        return new PdfBoolean(value: true);
                     } //else
 
                     return PdfBoolean.Pdftrue;
@@ -3523,7 +3535,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 {
                     if (_readDepth == 0)
                     {
-                        return new PdfBoolean(false);
+                        return new PdfBoolean(value: false);
                     } //else
 
                     return PdfBoolean.Pdffalse;
@@ -3533,7 +3545,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal PdfObject ReadSingleObject(int k)
+    internal protected PdfObject ReadSingleObject(int k)
     {
         Strings.Clear();
         var k2 = k * 2;
@@ -3559,7 +3571,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
         {
-            Tokens.ThrowError("Invalid object number.");
+            Tokens.ThrowError(error: "Invalid object number.");
         }
 
         _objNum = Tokens.IntValue;
@@ -3567,15 +3579,15 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
         {
-            Tokens.ThrowError("Invalid generation number.");
+            Tokens.ThrowError(error: "Invalid generation number.");
         }
 
         _objGen = Tokens.IntValue;
         Tokens.NextValidToken();
 
-        if (!Tokens.StringValue.Equals("obj", StringComparison.Ordinal))
+        if (!Tokens.StringValue.Equals(value: "obj", StringComparison.Ordinal))
         {
-            Tokens.ThrowError("Token 'obj' expected.");
+            Tokens.ThrowError(error: "Token 'obj' expected.");
         }
 
         PdfObject obj;
@@ -3610,23 +3622,23 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         return obj;
     }
 
-    protected internal void ReadXref()
+    internal protected void ReadXref()
     {
         _hybridXref = false;
         NewXrefType = false;
         Tokens.Seek((int)Tokens.Startxref);
         Tokens.NextToken();
 
-        if (!Tokens.StringValue.Equals("startxref", StringComparison.Ordinal))
+        if (!Tokens.StringValue.Equals(value: "startxref", StringComparison.Ordinal))
         {
-            throw new InvalidPdfException("startxref not found.");
+            throw new InvalidPdfException(message: "startxref not found.");
         }
 
         Tokens.NextToken();
 
         if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
         {
-            throw new InvalidPdfException("startxref is not followed by a number.");
+            throw new InvalidPdfException(message: "startxref is not followed by a number.");
         }
 
         var startxref = Tokens.IntValue;
@@ -3648,7 +3660,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         xrefByteOffset.Add(startxref);
 
-        if (_bBailout == false)
+        if (!_bBailout)
         {
             Xref = null;
             Tokens.Seek(startxref);
@@ -3671,13 +3683,13 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal PdfDictionary ReadXrefSection()
+    internal protected PdfDictionary ReadXrefSection()
     {
         Tokens.NextValidToken();
 
-        if (!Tokens.StringValue.Equals("xref", StringComparison.Ordinal))
+        if (!Tokens.StringValue.Equals(value: "xref", StringComparison.Ordinal))
         {
-            Tokens.ThrowError("xref subsection not found");
+            Tokens.ThrowError(error: "xref subsection not found");
         }
 
         var start = 0;
@@ -3689,14 +3701,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         {
             Tokens.NextValidToken();
 
-            if (Tokens.StringValue.Equals("trailer", StringComparison.Ordinal))
+            if (Tokens.StringValue.Equals(value: "trailer", StringComparison.Ordinal))
             {
                 break;
             }
 
             if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
             {
-                Tokens.ThrowError("Object number of the first object in this xref subsection not found");
+                Tokens.ThrowError(error: "Object number of the first object in this xref subsection not found");
             }
 
             start = Tokens.IntValue;
@@ -3704,7 +3716,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (Tokens.TokenType != PrTokeniser.TK_NUMBER)
             {
-                Tokens.ThrowError("Number of entries in this xref subsection not found");
+                Tokens.ThrowError(error: "Number of entries in this xref subsection not found");
             }
 
             end = Tokens.IntValue + start;
@@ -3738,7 +3750,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 Tokens.NextValidToken();
                 var p = k * 2;
 
-                if (Tokens.StringValue.Equals("n", StringComparison.Ordinal))
+                if (Tokens.StringValue.Equals(value: "n", StringComparison.Ordinal))
                 {
                     if (Xref[p] == 0 && Xref[p + 1] == 0)
                     {
@@ -3747,7 +3759,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                         Xref[p] = pos;
                     }
                 }
-                else if (Tokens.StringValue.Equals("f", StringComparison.Ordinal))
+                else if (Tokens.StringValue.Equals(value: "f", StringComparison.Ordinal))
                 {
                     if (Xref[p] == 0 && Xref[p + 1] == 0)
                     {
@@ -3756,7 +3768,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
                 else
                 {
-                    Tokens.ThrowError("Invalid cross-reference entry in this xref subsection");
+                    Tokens.ThrowError(error: "Invalid cross-reference entry in this xref subsection");
                 }
             }
         }
@@ -3787,7 +3799,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         return localTrailer;
     }
 
-    protected internal bool ReadXRefStream(int ptr)
+    internal protected bool ReadXRefStream(int ptr)
     {
         Tokens.Seek(ptr);
         var thisStream = 0;
@@ -3809,7 +3821,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             return false;
         }
 
-        if (!Tokens.NextToken() || !Tokens.StringValue.Equals("obj", StringComparison.Ordinal))
+        if (!Tokens.NextToken() || !Tokens.StringValue.Equals(value: "obj", StringComparison.Ordinal))
         {
             return false;
         }
@@ -3984,22 +3996,22 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
 
         //before we go on, let's make sure we haven't done this a number of times that indicates a problematic recursion loop
-        if ((new StackTrace().GetFrames() ?? Array.Empty<StackFrame>()).Count(frame => frame.GetMethod().Name ==
-                nameof(ReadXRefStream)) > 200)
+        if ((new StackTrace().GetFrames() ?? Array.Empty<StackFrame>()).Count(frame
+                => string.Equals(frame.GetMethod().Name, nameof(ReadXRefStream), StringComparison.Ordinal)) > 200)
         {
             _bBailout = true;
 
-            throw new InvalidOperationException("Likely recursion loop issue.");
+            throw new InvalidOperationException(message: "Likely recursion loop issue.");
         }
 
         return ReadXRefStream(prev);
     }
 
-    protected internal void RebuildXref()
+    internal protected void RebuildXref()
     {
         _hybridXref = false;
         NewXrefType = false;
-        Tokens.Seek(0);
+        Tokens.Seek(pos: 0);
         var xr = new int[1024][];
         var top = 0;
         trailer = null;
@@ -4016,9 +4028,9 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (line[0] == 't')
             {
-                var lineStr = PdfEncodings.ConvertToString(line, null);
+                var lineStr = PdfEncodings.ConvertToString(line, encoding: null);
 
-                if (!lineStr.StartsWith("trailer", StringComparison.Ordinal))
+                if (!lineStr.StartsWith(value: "trailer", StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -4061,7 +4073,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 {
                     var newLength = num * 2;
                     var xr2 = new int[newLength][];
-                    Array.Copy(xr, 0, xr2, 0, top);
+                    Array.Copy(xr, sourceIndex: 0, xr2, destinationIndex: 0, top);
                     xr = xr2;
                 }
 
@@ -4080,7 +4092,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (trailer == null)
         {
-            throw new InvalidPdfException("trailer not found.");
+            throw new InvalidPdfException(message: "trailer not found.");
         }
 
         Xref = new int[top * 2];
@@ -4096,7 +4108,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
         }
     }
 
-    protected internal void RemoveUnusedNode(PdfObject obj, bool[] hits)
+    internal protected void RemoveUnusedNode(PdfObject obj, bool[] hits)
     {
         if (hits == null)
         {
@@ -4121,9 +4133,9 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             object[] objs = null;
             var idx = 0;
 
-            if (current is PdfObject)
+            if (current is PdfObject pdfObject)
             {
-                obj = (PdfObject)current;
+                obj = pdfObject;
 
                 switch (obj.Type)
                 {
@@ -4131,7 +4143,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     case PdfObject.STREAM:
                         dic = (PdfDictionary)obj;
                         keys = new PdfName[dic.Size];
-                        dic.Keys.CopyTo(keys, 0);
+                        dic.Keys.CopyTo(keys, arrayIndex: 0);
 
                         break;
                     case PdfObject.ARRAY:
@@ -4297,12 +4309,12 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             else
             {
                 Tokens.Seek(start + streamLength);
-                var line = Tokens.ReadString(20);
+                var line = Tokens.ReadString(size: 20);
 
-                if (!line.StartsWith("\nendstream", StringComparison.Ordinal) &&
-                    !line.StartsWith("\r\nendstream", StringComparison.Ordinal) &&
-                    !line.StartsWith("\rendstream", StringComparison.Ordinal) &&
-                    !line.StartsWith("endstream", StringComparison.Ordinal))
+                if (!line.StartsWith(value: "\nendstream", StringComparison.Ordinal) &&
+                    !line.StartsWith(value: "\r\nendstream", StringComparison.Ordinal) &&
+                    !line.StartsWith(value: "\rendstream", StringComparison.Ordinal) &&
+                    !line.StartsWith(value: "endstream", StringComparison.Ordinal))
                 {
                     calc = true;
                 }
@@ -4337,8 +4349,8 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 if (Equalsn(tline, _endobj))
                 {
                     Tokens.Seek(pos - 16);
-                    var s = Tokens.ReadString(16);
-                    var index = s.IndexOf("endstream", StringComparison.OrdinalIgnoreCase);
+                    var s = Tokens.ReadString(size: 16);
+                    var index = s.IndexOf(value: "endstream", StringComparison.OrdinalIgnoreCase);
 
                     if (index >= 0)
                     {
@@ -4371,7 +4383,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             if (Xref.Length < size)
             {
                 var xref2 = new int[size];
-                Array.Copy(Xref, 0, xref2, 0, Xref.Length);
+                Array.Copy(Xref, sourceIndex: 0, xref2, destinationIndex: 0, Xref.Length);
                 Xref = xref2;
             }
         }
@@ -4419,7 +4431,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         var encDic = trailer?.Get(PdfName.Encrypt);
 
-        if (encDic == null || encDic.ToString().Equals("null", StringComparison.Ordinal))
+        if (encDic == null || encDic.ToString().Equals(value: "null", StringComparison.Ordinal))
         {
             return;
         }
@@ -4438,14 +4450,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (documentIDs != null)
         {
-            o = documentIDs[0];
+            o = documentIDs[idx: 0];
             Strings.Remove((PdfString)o);
             s = o.ToString();
             documentId = DocWriter.GetIsoBytes(s);
 
             if (documentIDs.Size > 1)
             {
-                Strings.Remove((PdfString)documentIDs[1]);
+                Strings.Remove((PdfString)documentIDs[idx: 1]);
             }
         }
 
@@ -4500,14 +4512,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                     if (!o.IsNumber())
                     {
-                        throw new InvalidPdfException("Illegal Length value.");
+                        throw new InvalidPdfException(message: "Illegal Length value.");
                     }
 
                     lengthValue = ((PdfNumber)o).IntValue;
 
                     if (lengthValue > 128 || lengthValue < 40 || lengthValue % 8 != 0)
                     {
-                        throw new InvalidPdfException("Illegal Length value.");
+                        throw new InvalidPdfException(message: "Illegal Length value.");
                     }
 
                     cryptoMode = PdfWriter.STANDARD_ENCRYPTION_128;
@@ -4518,14 +4530,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                     if (dic == null)
                     {
-                        throw new InvalidPdfException("/CF not found (encryption)");
+                        throw new InvalidPdfException(message: "/CF not found (encryption)");
                     }
 
                     dic = (PdfDictionary)dic.Get(PdfName.Stdcf);
 
                     if (dic == null)
                     {
-                        throw new InvalidPdfException("/StdCF not found (encryption)");
+                        throw new InvalidPdfException(message: "/StdCF not found (encryption)");
                     }
 
                     if (PdfName.V2.Equals(dic.Get(PdfName.Cfm)))
@@ -4538,22 +4550,33 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     }
                     else
                     {
-                        throw new UnsupportedPdfException("No compatible encryption found");
+                        throw new UnsupportedPdfException(message: "No compatible encryption found");
                     }
 
                     var em = enc.Get(PdfName.Encryptmetadata);
 
-                    if (em != null && em.ToString().Equals("false", StringComparison.Ordinal))
+                    if (em != null && em.ToString().Equals(value: "false", StringComparison.Ordinal))
                     {
                         cryptoMode |= PdfWriter.DO_NOT_ENCRYPT_METADATA;
                     }
 
                     break;
+                case 5:
+                    cryptoMode = PdfWriter.ENCRYPTION_AES_256;
+                    var em5 = enc.Get(PdfName.Encryptmetadata);
+
+                    if (em5 != null && em5.ToString().Equals(value: "false", StringComparison.Ordinal))
+                    {
+                        cryptoMode |= PdfWriter.DO_NOT_ENCRYPT_METADATA;
+                    }
+
+                    break;
+
                 case 6:
                     cryptoMode = PdfWriter.ENCRYPTION_AES_256_V3;
                     em = enc.Get(PdfName.Encryptmetadata);
 
-                    if (em != null && em.ToString().Equals("false", StringComparison.Ordinal))
+                    if (em != null && em.ToString().Equals(value: "false", StringComparison.Ordinal))
                     {
                         cryptoMode |= PdfWriter.DO_NOT_ENCRYPT_METADATA;
                     }
@@ -4573,7 +4596,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (!o.IsNumber())
             {
-                throw new InvalidPdfException("Illegal V value.");
+                throw new InvalidPdfException(message: "Illegal V value.");
             }
 
             var vValue = ((PdfNumber)o).IntValue;
@@ -4591,14 +4614,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                     if (!o.IsNumber())
                     {
-                        throw new InvalidPdfException("Illegal Length value.");
+                        throw new InvalidPdfException(message: "Illegal Length value.");
                     }
 
                     lengthValue = ((PdfNumber)o).IntValue;
 
                     if (lengthValue > 128 || lengthValue < 40 || lengthValue % 8 != 0)
                     {
-                        throw new InvalidPdfException("Illegal Length value.");
+                        throw new InvalidPdfException(message: "Illegal Length value.");
                     }
 
                     cryptoMode = PdfWriter.STANDARD_ENCRYPTION_128;
@@ -4606,18 +4629,19 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                     break;
                 case 4:
+                case 5:
                     var dic = (PdfDictionary)enc.Get(PdfName.Cf);
 
                     if (dic == null)
                     {
-                        throw new InvalidPdfException("/CF not found (encryption)");
+                        throw new InvalidPdfException(message: "/CF not found (encryption)");
                     }
 
                     dic = (PdfDictionary)dic.Get(PdfName.Defaultcryptfilter);
 
                     if (dic == null)
                     {
-                        throw new InvalidPdfException("/DefaultCryptFilter not found (encryption)");
+                        throw new InvalidPdfException(message: "/DefaultCryptFilter not found (encryption)");
                     }
 
                     if (PdfName.V2.Equals(dic.Get(PdfName.Cfm)))
@@ -4630,14 +4654,19 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                         cryptoMode = PdfWriter.ENCRYPTION_AES_128;
                         lengthValue = 128;
                     }
+                    else if (PdfName.AESV3.Equals(dic.Get(PdfName.Cfm)))
+                    {
+                        cryptoMode = PdfWriter.ENCRYPTION_AES_256;
+                        lengthValue = 256;
+                    }
                     else
                     {
-                        throw new UnsupportedPdfException("No compatible encryption found");
+                        throw new UnsupportedPdfException(message: "No compatible encryption found");
                     }
 
                     var em = dic.Get(PdfName.Encryptmetadata);
 
-                    if (em != null && em.ToString().Equals("false", StringComparison.Ordinal))
+                    if (em != null && em.ToString().Equals(value: "false", StringComparison.Ordinal))
                     {
                         cryptoMode |= PdfWriter.DO_NOT_ENCRYPT_METADATA;
                     }
@@ -4669,42 +4698,50 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
             if (!foundRecipient || envelopedData == null)
             {
-                throw new UnsupportedPdfException("Bad certificate and key.");
+                throw new UnsupportedPdfException(message: "Bad certificate and key.");
             }
 
+            var isAes256 = (cryptoMode & PdfWriter.ENCRYPTION_MASK) == PdfWriter.ENCRYPTION_AES_256;
+
 #if NET40
-            using (var sh = new SHA1CryptoServiceProvider())
+            HashAlgorithm hashAlgorithm =
+ isAes256 ? new SHA256CryptoServiceProvider() : new SHA1CryptoServiceProvider();
+
+            using (var sh = hashAlgorithm)
             {
-                sh.TransformBlock(envelopedData, 0, 20, envelopedData, 0);
+                sh.TransformBlock(envelopedData, inputOffset: 0, inputCount: 20, envelopedData, outputOffset: 0);
+
                 for (var i = 0; i < recipients.Size; i++)
                 {
                     var encodedRecipient = recipients[i].GetBytes();
-                    sh.TransformBlock(encodedRecipient, 0, encodedRecipient.Length, encodedRecipient, 0);
+
+                    sh.TransformBlock(encodedRecipient, inputOffset: 0, encodedRecipient.Length, encodedRecipient,
+                        outputOffset: 0);
                 }
 
                 if ((cryptoMode & PdfWriter.DO_NOT_ENCRYPT_METADATA) != 0)
                 {
-                    sh.TransformBlock(PdfEncryption.MetadataPad, 0, PdfEncryption.MetadataPad.Length,
-                                      PdfEncryption.MetadataPad, 0);
+                    sh.TransformBlock(PdfEncryption.MetadataPad, inputOffset: 0, PdfEncryption.MetadataPad.Length,
+                        PdfEncryption.MetadataPad, outputOffset: 0);
                 }
 
-                sh.TransformFinalBlock(envelopedData, 0, 0);
+                sh.TransformFinalBlock(envelopedData, inputOffset: 0, inputCount: 0);
                 encryptionKey = sh.Hash;
             }
 #else
-            using (var sh = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
+            using (var sh = IncrementalHash.CreateHash(isAes256 ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA1))
             {
-                sh.AppendData(envelopedData, 0, 20);
+                sh.AppendData(envelopedData, offset: 0, count: 20);
 
                 for (var i = 0; i < recipients.Size; i++)
                 {
                     var encodedRecipient = recipients[i].GetBytes();
-                    sh.AppendData(encodedRecipient, 0, encodedRecipient.Length);
+                    sh.AppendData(encodedRecipient, offset: 0, encodedRecipient.Length);
                 }
 
                 if ((cryptoMode & PdfWriter.DO_NOT_ENCRYPT_METADATA) != 0)
                 {
-                    sh.AppendData(PdfEncryption.MetadataPad, 0, PdfEncryption.MetadataPad.Length);
+                    sh.AppendData(PdfEncryption.MetadataPad, offset: 0, PdfEncryption.MetadataPad.Length);
                 }
 
                 encryptionKey = sh.GetHashAndReset();
@@ -4717,27 +4754,13 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (filter.Equals(PdfName.Standard))
         {
-            if (RValue < 6)
+            if (RValue == 5)
             {
-                //check by owner password
-                decrypt.SetupByOwnerPassword(documentId, Password, uValue, oValue, PValue);
-
-                if (!equalsArray(uValue, decrypt.UserKey, RValue == 3 || RValue == 4 ? 16 : 32))
-                {
-                    //check by user password
-                    decrypt.SetupByUserPassword(documentId, Password, oValue, PValue);
-
-                    if (!equalsArray(uValue, decrypt.UserKey, RValue == 3 || RValue == 4 ? 16 : 32))
-                    {
-                        throw new BadPasswordException("Bad user password");
-                    }
-                }
-                else
-                {
-                    _ownerPasswordUsed = true;
-                }
+                _ownerPasswordUsed = decrypt.ReadAES256Key(enc, Password);
+                decrypt.DocumentId = documentId;
+                PValue = decrypt.GetPermissions();
             }
-            else
+            else if (RValue == 6)
             {
                 // implements Algorithm 2.A: Retrieving the file encryption key from an encrypted document in order to decrypt it (revision 6 and later) - ISO 32000-2 section 7.6.4.3.3
                 s = enc.Get(PdfName.UE).ToString();
@@ -4759,7 +4782,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 }
                 else if (password.Length > 127)
                 {
-                    password = password.CopyOf(127);
+                    password = password.CopyOf(newLength: 127);
                 }
 
                 // According to ISO 32000-2 the uValue is expected to be 48 bytes in length.
@@ -4768,13 +4791,13 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 // operations, though, we must only use the 48 bytes.
                 if (uValue != null && uValue.Length > 48)
                 {
-                    uValue = uValue.CopyOf(48);
+                    uValue = uValue.CopyOf(newLength: 48);
                 }
 
                 // step c of Algorithm 2.A
-                var hashAlg2B = PdfEncryption.HashAlg2B(password, oValue.CopyOfRange(32, 40), uValue);
+                var hashAlg2B = PdfEncryption.HashAlg2B(password, oValue.CopyOfRange(start: 32, end: 40), uValue);
 
-                if (equalsArray(hashAlg2B, oValue, 32))
+                if (equalsArray(hashAlg2B, oValue, size: 32))
                 {
                     // step d of Algorithm 2.A
                     decrypt.SetupByOwnerPassword(documentId, password, uValue, ueValue, oValue, oeValue, PValue);
@@ -4789,11 +4812,12 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                 if (!_ownerPasswordUsed)
                 {
                     // analog of step c of Algorithm 2.A for user password
-                    hashAlg2B = PdfEncryption.HashAlg2B(password, uValue.CopyOfRange(32, 40), null);
+                    hashAlg2B = PdfEncryption.HashAlg2B(password, uValue.CopyOfRange(start: 32, end: 40),
+                        userKey: null);
 
-                    if (!equalsArray(hashAlg2B, uValue, 32))
+                    if (!equalsArray(hashAlg2B, uValue, size: 32))
                     {
-                        throw new BadPasswordException("Bad user password");
+                        throw new BadPasswordException(message: "Bad user password");
                     }
 
                     // step e of Algorithm 2.A
@@ -4802,16 +4826,46 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     // step f of Algorithm 2.A
                     if (!decrypt.DecryptAndCheckPerms(permsValue))
                     {
-                        throw new BadPasswordException("Bad user password");
+                        throw new BadPasswordException(message: "Bad user password");
                     }
                 }
 
                 PValue = decrypt.Permissions;
             }
+            else
+            {
+                //check by owner password
+                decrypt.SetupByOwnerPassword(documentId, Password, uValue, oValue, PValue);
+
+                if (!equalsArray(uValue, decrypt.UserKey, RValue == 3 || RValue == 4 ? 16 : 32))
+                {
+                    //check by user password
+                    decrypt.SetupByUserPassword(documentId, Password, oValue, PValue);
+
+                    if (!equalsArray(uValue, decrypt.UserKey, RValue == 3 || RValue == 4 ? 16 : 32))
+                    {
+                        throw new BadPasswordException(message: "Bad user password");
+                    }
+                }
+                else
+                {
+                    _ownerPasswordUsed = true;
+                }
+            }
         }
         else if (filter.Equals(PdfName.Pubsec))
         {
-            decrypt.SetupByEncryptionKey(encryptionKey, lengthValue);
+            decrypt.DocumentId = documentId;
+
+            if ((cryptoMode & PdfWriter.ENCRYPTION_MASK) == PdfWriter.ENCRYPTION_AES_256)
+            {
+                decrypt.SetKey(encryptionKey);
+            }
+            else
+            {
+                decrypt.SetupByEncryptionKey(encryptionKey, lengthValue);
+            }
+
             _ownerPasswordUsed = true;
         }
 
@@ -4930,7 +4984,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (signatureNames.Count <= 0)
         {
-            throw new InvalidPdfException("No signatures found");
+            throw new InvalidPdfException(message: "No signatures found");
         }
 
         var signatureLastByte = new List<int>();
@@ -4940,8 +4994,8 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             signatureNames[i] = AcroFields.GetTranslatedFieldName(signatureNames[i]);
             var nameDict = AcroFields.GetSignatureDictionary(signatureNames[i]);
             var byteRange = nameDict.GetAsArray(PdfName.Byterange);
-            var offset = ((PdfNumber)byteRange[2]).IntValue;
-            var lastByte = offset + ((PdfNumber)byteRange[3]).IntValue;
+            var offset = ((PdfNumber)byteRange[idx: 2]).IntValue;
+            var lastByte = offset + ((PdfNumber)byteRange[idx: 3]).IntValue;
             signatureLastByte.Add(lastByte);
         }
 
@@ -4949,7 +5003,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
         if (xrefByteOffset.Count <= 0)
         {
-            throw new InvalidPdfException("No references to xref found");
+            throw new InvalidPdfException(message: "No references to xref found");
         }
 
         xrefByteOffset.Sort(new XrefsSorterComparator());
@@ -4959,7 +5013,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             Tokens.Seek(xrefByteOffset[i]);
             Tokens.NextToken();
 
-            if (Tokens.StringValue.Equals("xref", StringComparison.Ordinal))
+            if (Tokens.StringValue.Equals(value: "xref", StringComparison.Ordinal))
             {
                 while (true)
                 {
@@ -4977,14 +5031,14 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
                     Tokens.Seek(Tokens.FilePointer + bytesSkip * 20);
                 }
 
-                if (!Tokens.StringValue.Equals("trailer", StringComparison.Ordinal))
+                if (!Tokens.StringValue.Equals(value: "trailer", StringComparison.Ordinal))
                 {
-                    throw new InvalidPdfException("trailer not found");
+                    throw new InvalidPdfException(message: "trailer not found");
                 }
 
                 while (true)
                 {
-                    if (Tokens.NextToken() && Tokens.StringValue.Equals("startxref", StringComparison.Ordinal))
+                    if (Tokens.NextToken() && Tokens.StringValue.Equals(value: "startxref", StringComparison.Ordinal))
                     {
                         break;
                     }
@@ -4992,17 +5046,17 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                 if (!Tokens.NextToken() || !Tokens.TokenType.Equals(PrTokeniser.TK_NUMBER))
                 {
-                    throw new InvalidPdfException("startxref byte position not found");
+                    throw new InvalidPdfException(message: "startxref byte position not found");
                 }
 
                 if (!Tokens.NextToken() || !string.IsNullOrEmpty(Tokens.StringValue))
                 {
-                    throw new InvalidPdfException("invalid data between startxref byte position and eof");
+                    throw new InvalidPdfException(message: "invalid data between startxref byte position and eof");
                 }
 
-                var eofPos = Tokens.FilePointer;
+                var tokensFilePointer = Tokens.FilePointer;
 
-                if (eofPos > signatureLastByte[i])
+                if (tokensFilePointer > signatureLastByte[i])
                 {
                     return signaturesCoverWholeDocument;
                 }
@@ -5013,12 +5067,12 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             {
                 if (!Tokens.NextToken())
                 {
-                    throw new InvalidPdfException("object's generation number not found");
+                    throw new InvalidPdfException(message: "object's generation number not found");
                 }
 
-                if (!Tokens.NextToken() || !Tokens.StringValue.Equals("obj", StringComparison.Ordinal))
+                if (!Tokens.NextToken() || !Tokens.StringValue.Equals(value: "obj", StringComparison.Ordinal))
                 {
-                    throw new InvalidPdfException("object's brilling not found");
+                    throw new InvalidPdfException(message: "object's brilling not found");
                 }
 
                 var obj = ReadPrObject();
@@ -5030,45 +5084,45 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
 
                     if (!PdfName.Xref.Equals(stm.Get(PdfName.TYPE)))
                     {
-                        throw new InvalidPdfException("object is not typed as XRef");
+                        throw new InvalidPdfException(message: "object is not typed as XRef");
                     }
                 }
                 else
                 {
-                    throw new InvalidPdfException("invalid xref object");
+                    throw new InvalidPdfException(message: "invalid xref object");
                 }
 
                 var Length = ((PdfNumber)stm.Get(PdfName.LENGTH)).IntValue;
                 Tokens.Seek(Tokens.FilePointer + Length);
 
-                if (!Tokens.NextToken() || !Tokens.StringValue.Equals("endstream", StringComparison.Ordinal))
+                if (!Tokens.NextToken() || !Tokens.StringValue.Equals(value: "endstream", StringComparison.Ordinal))
                 {
-                    throw new InvalidPdfException("endstream not found");
+                    throw new InvalidPdfException(message: "endstream not found");
                 }
 
-                if (!Tokens.NextToken() || !Tokens.StringValue.Equals("endobj", StringComparison.Ordinal))
+                if (!Tokens.NextToken() || !Tokens.StringValue.Equals(value: "endobj", StringComparison.Ordinal))
                 {
-                    throw new InvalidPdfException("endobj not found");
+                    throw new InvalidPdfException(message: "endobj not found");
                 }
 
-                if (!Tokens.NextToken() || !Tokens.StringValue.Equals("startxref", StringComparison.Ordinal))
+                if (!Tokens.NextToken() || !Tokens.StringValue.Equals(value: "startxref", StringComparison.Ordinal))
                 {
-                    throw new InvalidPdfException("startxref not found");
+                    throw new InvalidPdfException(message: "startxref not found");
                 }
 
                 if (!Tokens.NextToken() || !Tokens.TokenType.Equals(PrTokeniser.TK_NUMBER))
                 {
-                    throw new InvalidPdfException("startxref byte position not found");
+                    throw new InvalidPdfException(message: "startxref byte position not found");
                 }
 
                 if (!Tokens.NextToken() || !string.IsNullOrEmpty(Tokens.StringValue))
                 {
-                    throw new InvalidPdfException("invalid data between startxref byte position and eof");
+                    throw new InvalidPdfException(message: "invalid data between startxref byte position and eof");
                 }
 
-                var eofPos = Tokens.FilePointer;
+                var tokensFilePointer = Tokens.FilePointer;
 
-                if (eofPos > signatureLastByte[i])
+                if (tokensFilePointer > signatureLastByte[i])
                 {
                     return signaturesCoverWholeDocument;
                 }
@@ -5077,7 +5131,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             }
             else
             {
-                throw new InvalidPdfException("xref object not found");
+                throw new InvalidPdfException(message: "xref object not found");
             }
         }
 
@@ -5360,7 +5414,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             _refsp = null;
             _refsn = new List<PrIndirectReference>();
             _pageInh = new List<PdfDictionary>();
-            iteratePages((PrIndirectReference)_reader.catalog.Get(PdfName.Pages), 0);
+            iteratePages((PrIndirectReference)_reader.catalog.Get(PdfName.Pages), depth: 0);
             _pageInh = null;
             _reader._rootPages.Put(PdfName.Count, new PdfNumber(_refsn.Count));
         }
@@ -5439,7 +5493,7 @@ public class PdfReader : IPdfViewerPreferences, IDisposable
             _refsn = newPageRefs;
         }
 
-        protected internal PrIndirectReference GetSinglePage(int n)
+        internal protected PrIndirectReference GetSinglePage(int n)
         {
             var acc = new PdfDictionary();
             var top = _reader._rootPages;

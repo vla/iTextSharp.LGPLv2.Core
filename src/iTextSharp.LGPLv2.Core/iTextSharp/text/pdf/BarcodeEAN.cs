@@ -59,27 +59,63 @@ public class BarcodeEan : Barcode
     /// </summary>
     private static readonly byte[][] _bars =
     {
-        new byte[] { 3, 2, 1, 1 }, // 0
-        new byte[] { 2, 2, 2, 1 }, // 1
-        new byte[] { 2, 1, 2, 2 }, // 2
-        new byte[] { 1, 4, 1, 1 }, // 3
-        new byte[] { 1, 1, 3, 2 }, // 4
-        new byte[] { 1, 2, 3, 1 }, // 5
-        new byte[] { 1, 1, 1, 4 }, // 6
-        new byte[] { 1, 3, 1, 2 }, // 7
-        new byte[] { 1, 2, 1, 3 }, // 8
-        new byte[] { 3, 1, 1, 2 }, // 9
+        new byte[]
+        {
+            3, 2, 1, 1
+        }, // 0
+        new byte[]
+        {
+            2, 2, 2, 1
+        }, // 1
+        new byte[]
+        {
+            2, 1, 2, 2
+        }, // 2
+        new byte[]
+        {
+            1, 4, 1, 1
+        }, // 3
+        new byte[]
+        {
+            1, 1, 3, 2
+        }, // 4
+        new byte[]
+        {
+            1, 2, 3, 1
+        }, // 5
+        new byte[]
+        {
+            1, 1, 1, 4
+        }, // 6
+        new byte[]
+        {
+            1, 3, 1, 2
+        }, // 7
+        new byte[]
+        {
+            1, 2, 1, 3
+        }, // 8
+        new byte[]
+        {
+            3, 1, 1, 2
+        } // 9
     };
 
     /// <summary>
     ///     The bar positions that are guard bars.
     /// </summary>
-    private static readonly int[] _guardEan13 = { 0, 2, 28, 30, 56, 58 };
+    private static readonly int[] _guardEan13 =
+    {
+        0, 2, 28, 30, 56, 58
+    };
 
     /// <summary>
     ///     The bar positions that are guard bars.
     /// </summary>
-    private static readonly int[] _guardEan8 = { 0, 2, 20, 22, 40, 42 };
+    private static readonly int[] _guardEan8 =
+    {
+        0, 2, 20, 22, 40, 42
+    };
 
     /// <summary>
     ///     The bar positions that are guard bars.
@@ -89,28 +125,64 @@ public class BarcodeEan : Barcode
     /// <summary>
     ///     The bar positions that are guard bars.
     /// </summary>
-    private static readonly int[] _guardUpca = { 0, 2, 4, 6, 28, 30, 52, 54, 56, 58 };
+    private static readonly int[] _guardUpca =
+    {
+        0, 2, 4, 6, 28, 30, 52, 54, 56, 58
+    };
 
     /// <summary>
     ///     The bar positions that are guard bars.
     /// </summary>
-    private static readonly int[] _guardUpce = { 0, 2, 28, 30, 32 };
+    private static readonly int[] _guardUpce =
+    {
+        0, 2, 28, 30, 32
+    };
 
     /// <summary>
     ///     Sequence of parities to be used with EAN13.
     /// </summary>
     private static readonly byte[][] _parity13 =
     {
-        new[] { Odd, Odd, Odd, Odd, Odd, Odd }, // 0
-        new[] { Odd, Odd, Even, Odd, Even, Even }, // 1
-        new[] { Odd, Odd, Even, Even, Odd, Even }, // 2
-        new[] { Odd, Odd, Even, Even, Even, Odd }, // 3
-        new[] { Odd, Even, Odd, Odd, Even, Even }, // 4
-        new[] { Odd, Even, Even, Odd, Odd, Even }, // 5
-        new[] { Odd, Even, Even, Even, Odd, Odd }, // 6
-        new[] { Odd, Even, Odd, Even, Odd, Even }, // 7
-        new[] { Odd, Even, Odd, Even, Even, Odd }, // 8
-        new[] { Odd, Even, Even, Odd, Even, Odd }, // 9
+        new[]
+        {
+            Odd, Odd, Odd, Odd, Odd, Odd
+        }, // 0
+        new[]
+        {
+            Odd, Odd, Even, Odd, Even, Even
+        }, // 1
+        new[]
+        {
+            Odd, Odd, Even, Even, Odd, Even
+        }, // 2
+        new[]
+        {
+            Odd, Odd, Even, Even, Even, Odd
+        }, // 3
+        new[]
+        {
+            Odd, Even, Odd, Odd, Even, Even
+        }, // 4
+        new[]
+        {
+            Odd, Even, Even, Odd, Odd, Even
+        }, // 5
+        new[]
+        {
+            Odd, Even, Even, Even, Odd, Odd
+        }, // 6
+        new[]
+        {
+            Odd, Even, Odd, Even, Odd, Even
+        }, // 7
+        new[]
+        {
+            Odd, Even, Odd, Even, Even, Odd
+        }, // 8
+        new[]
+        {
+            Odd, Even, Even, Odd, Even, Odd
+        } // 9
     };
 
     /// <summary>
@@ -118,10 +190,22 @@ public class BarcodeEan : Barcode
     /// </summary>
     private static readonly byte[][] _parity2 =
     {
-        new[] { Odd, Odd }, // 0
-        new[] { Odd, Even }, // 1
-        new[] { Even, Odd }, // 2
-        new[] { Even, Even }, // 3
+        new[]
+        {
+            Odd, Odd
+        }, // 0
+        new[]
+        {
+            Odd, Even
+        }, // 1
+        new[]
+        {
+            Even, Odd
+        }, // 2
+        new[]
+        {
+            Even, Even
+        } // 3
     };
 
     /// <summary>
@@ -129,16 +213,46 @@ public class BarcodeEan : Barcode
     /// </summary>
     private static readonly byte[][] _parity5 =
     {
-        new[] { Even, Even, Odd, Odd, Odd }, // 0
-        new[] { Even, Odd, Even, Odd, Odd }, // 1
-        new[] { Even, Odd, Odd, Even, Odd }, // 2
-        new[] { Even, Odd, Odd, Odd, Even }, // 3
-        new[] { Odd, Even, Even, Odd, Odd }, // 4
-        new[] { Odd, Odd, Even, Even, Odd }, // 5
-        new[] { Odd, Odd, Odd, Even, Even }, // 6
-        new[] { Odd, Even, Odd, Even, Odd }, // 7
-        new[] { Odd, Even, Odd, Odd, Even }, // 8
-        new[] { Odd, Odd, Even, Odd, Even }, // 9
+        new[]
+        {
+            Even, Even, Odd, Odd, Odd
+        }, // 0
+        new[]
+        {
+            Even, Odd, Even, Odd, Odd
+        }, // 1
+        new[]
+        {
+            Even, Odd, Odd, Even, Odd
+        }, // 2
+        new[]
+        {
+            Even, Odd, Odd, Odd, Even
+        }, // 3
+        new[]
+        {
+            Odd, Even, Even, Odd, Odd
+        }, // 4
+        new[]
+        {
+            Odd, Odd, Even, Even, Odd
+        }, // 5
+        new[]
+        {
+            Odd, Odd, Odd, Even, Even
+        }, // 6
+        new[]
+        {
+            Odd, Even, Odd, Even, Odd
+        }, // 7
+        new[]
+        {
+            Odd, Even, Odd, Odd, Even
+        }, // 8
+        new[]
+        {
+            Odd, Odd, Even, Odd, Even
+        } // 9
     };
 
     /// <summary>
@@ -146,28 +260,63 @@ public class BarcodeEan : Barcode
     /// </summary>
     private static readonly byte[][] _paritye =
     {
-        new[] { Even, Even, Even, Odd, Odd, Odd }, // 0
-        new[] { Even, Even, Odd, Even, Odd, Odd }, // 1
-        new[] { Even, Even, Odd, Odd, Even, Odd }, // 2
-        new[] { Even, Even, Odd, Odd, Odd, Even }, // 3
-        new[] { Even, Odd, Even, Even, Odd, Odd }, // 4
-        new[] { Even, Odd, Odd, Even, Even, Odd }, // 5
-        new[] { Even, Odd, Odd, Odd, Even, Even }, // 6
-        new[] { Even, Odd, Even, Odd, Even, Odd }, // 7
-        new[] { Even, Odd, Even, Odd, Odd, Even }, // 8
-        new[] { Even, Odd, Odd, Even, Odd, Even }, // 9
+        new[]
+        {
+            Even, Even, Even, Odd, Odd, Odd
+        }, // 0
+        new[]
+        {
+            Even, Even, Odd, Even, Odd, Odd
+        }, // 1
+        new[]
+        {
+            Even, Even, Odd, Odd, Even, Odd
+        }, // 2
+        new[]
+        {
+            Even, Even, Odd, Odd, Odd, Even
+        }, // 3
+        new[]
+        {
+            Even, Odd, Even, Even, Odd, Odd
+        }, // 4
+        new[]
+        {
+            Even, Odd, Odd, Even, Even, Odd
+        }, // 5
+        new[]
+        {
+            Even, Odd, Odd, Odd, Even, Even
+        }, // 6
+        new[]
+        {
+            Even, Odd, Even, Odd, Even, Odd
+        }, // 7
+        new[]
+        {
+            Even, Odd, Even, Odd, Odd, Even
+        }, // 8
+        new[]
+        {
+            Even, Odd, Odd, Even, Odd, Even
+        } // 9
     };
 
     /// <summary>
     ///     The x coordinates to place the text.
     /// </summary>
     private static readonly float[] _textposEan13 =
-        { 6.5f, 13.5f, 20.5f, 27.5f, 34.5f, 41.5f, 53.5f, 60.5f, 67.5f, 74.5f, 81.5f, 88.5f };
+    {
+        6.5f, 13.5f, 20.5f, 27.5f, 34.5f, 41.5f, 53.5f, 60.5f, 67.5f, 74.5f, 81.5f, 88.5f
+    };
 
     /// <summary>
     ///     The x coordinates to place the text.
     /// </summary>
-    private static readonly float[] _textposEan8 = { 6.5f, 13.5f, 20.5f, 27.5f, 39.5f, 46.5f, 53.5f, 60.5f };
+    private static readonly float[] _textposEan8 =
+    {
+        6.5f, 13.5f, 20.5f, 27.5f, 39.5f, 46.5f, 53.5f, 60.5f
+    };
 
     /// <summary>
     ///     Creates new BarcodeEAN
@@ -175,7 +324,7 @@ public class BarcodeEan : Barcode
     public BarcodeEan()
     {
         x = 0.8f;
-        font = BaseFont.CreateFont("Helvetica", "winansi", false);
+        font = BaseFont.CreateFont(name: "Helvetica", encoding: "winansi", embedded: false);
         size = 8;
         baseline = size;
         barHeight = size * 3;
@@ -195,6 +344,7 @@ public class BarcodeEan : Barcode
         {
             float width = 0;
             var height = barHeight;
+
             if (font != null)
             {
                 if (baseline <= 0)
@@ -211,39 +361,45 @@ public class BarcodeEan : Barcode
             {
                 case EAN13:
                     width = x * (11 + 12 * 7);
+
                     if (font != null)
                     {
-                        width += font.GetWidthPoint(code[0], size);
+                        width += font.GetWidthPoint(code[index: 0], size);
                     }
 
                     break;
                 case EAN8:
                     width = x * (11 + 8 * 7);
+
                     break;
                 case UPCA:
                     width = x * (11 + 12 * 7);
+
                     if (font != null)
                     {
-                        width += font.GetWidthPoint(code[0], size) + font.GetWidthPoint(code[11], size);
+                        width += font.GetWidthPoint(code[index: 0], size) + font.GetWidthPoint(code[index: 11], size);
                     }
 
                     break;
                 case UPCE:
                     width = x * (9 + 6 * 7);
+
                     if (font != null)
                     {
-                        width += font.GetWidthPoint(code[0], size) + font.GetWidthPoint(code[7], size);
+                        width += font.GetWidthPoint(code[index: 0], size) + font.GetWidthPoint(code[index: 7], size);
                     }
 
                     break;
                 case SUPP2:
                     width = x * (6 + 2 * 7);
+
                     break;
                 case SUPP5:
                     width = x * (4 + 5 * 7 + 4 * 2);
+
                     break;
                 default:
-                    throw new InvalidOperationException("Invalid code type.");
+                    throw new InvalidOperationException(message: "Invalid code type.");
             }
 
             return new Rectangle(width, height);
@@ -264,10 +420,11 @@ public class BarcodeEan : Barcode
 
         var mul = 3;
         var total = 0;
+
         for (var k = code.Length - 1; k >= 0; --k)
         {
-            var n = code[k] - '0';
-            total += mul * n;
+            var i = code[k] - '0';
+            total += mul * i;
             mul ^= 2;
         }
 
@@ -288,41 +445,52 @@ public class BarcodeEan : Barcode
             throw new ArgumentNullException(nameof(text));
         }
 
-        if (text.Length != 12 || !(text.StartsWith("0", StringComparison.Ordinal) ||
-                                   text.StartsWith("1", StringComparison.Ordinal)))
+        if (text.Length != 12 || !(text.StartsWith(value: '0'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																			
+		) || text.StartsWith(value: '1'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																			
+		)))
         {
             return null;
         }
 
-        if (text.Substring(3, 3).Equals("000", StringComparison.Ordinal) ||
-            text.Substring(3, 3).Equals("100", StringComparison.Ordinal) ||
-            text.Substring(3, 3).Equals("200", StringComparison.Ordinal))
+        if (text.Substring(startIndex: 3, length: 3).Equals(value: "000", StringComparison.Ordinal) ||
+            text.Substring(startIndex: 3, length: 3).Equals(value: "100", StringComparison.Ordinal) ||
+            text.Substring(startIndex: 3, length: 3).Equals(value: "200", StringComparison.Ordinal))
         {
-            if (text.Substring(6, 2).Equals("00", StringComparison.Ordinal))
+            if (text.Substring(startIndex: 6, length: 2).Equals(value: "00", StringComparison.Ordinal))
             {
-                return text.Substring(0, 1) + text.Substring(1, 2) + text.Substring(8, 3) + text.Substring(3, 1) +
-                       text.Substring(11);
+                return text.Substring(startIndex: 0, length: 1) + text.Substring(startIndex: 1, length: 2) +
+                       text.Substring(startIndex: 8, length: 3) + text.Substring(startIndex: 3, length: 1) +
+                       text.Substring(startIndex: 11);
             }
         }
-        else if (text.Substring(4, 2).Equals("00", StringComparison.Ordinal))
+        else if (text.Substring(startIndex: 4, length: 2).Equals(value: "00", StringComparison.Ordinal))
         {
-            if (text.Substring(6, 3).Equals("000", StringComparison.Ordinal))
+            if (text.Substring(startIndex: 6, length: 3).Equals(value: "000", StringComparison.Ordinal))
             {
-                return text.Substring(0, 1) + text.Substring(1, 3) + text.Substring(9, 2) + "3" + text.Substring(11);
+                return text.Substring(startIndex: 0, length: 1) + text.Substring(startIndex: 1, length: 3) +
+                       text.Substring(startIndex: 9, length: 2) + "3" + text.Substring(startIndex: 11);
             }
         }
-        else if (text.Substring(5, 1).Equals("0", StringComparison.Ordinal))
+        else if (text.Substring(startIndex: 5, length: 1).Equals(value: "0", StringComparison.Ordinal))
         {
-            if (text.Substring(6, 4).Equals("0000", StringComparison.Ordinal))
+            if (text.Substring(startIndex: 6, length: 4).Equals(value: "0000", StringComparison.Ordinal))
             {
-                return text.Substring(0, 1) + text.Substring(1, 4) + text.Substring(10, 1) + "4" + text.Substring(11);
+                return text.Substring(startIndex: 0, length: 1) + text.Substring(startIndex: 1, length: 4) +
+                       text.Substring(startIndex: 10, length: 1) + "4" + text.Substring(startIndex: 11);
             }
         }
-        else if (text[10] >= '5')
+        else if (text[index: 10] >= '5')
         {
-            if (text.Substring(6, 4).Equals("0000", StringComparison.Ordinal))
+            if (text.Substring(startIndex: 6, length: 4).Equals(value: "0000", StringComparison.Ordinal))
             {
-                return text.Substring(0, 1) + text.Substring(1, 5) + text.Substring(10, 1) + text.Substring(11);
+                return text.Substring(startIndex: 0, length: 1) + text.Substring(startIndex: 1, length: 5) +
+                       text.Substring(startIndex: 10, length: 1) + text.Substring(startIndex: 11);
             }
         }
 
@@ -341,10 +509,11 @@ public class BarcodeEan : Barcode
             throw new ArgumentNullException(nameof(barCode));
         }
 
-        var code = new int[barCode.Length];
-        for (var k = 0; k < code.Length; ++k)
+        var ints = new int[barCode.Length];
+
+        for (var k = 0; k < ints.Length; ++k)
         {
-            code[k] = barCode[k] - '0';
+            ints[k] = barCode[k] - '0';
         }
 
         var bars = new byte[TotalbarsEan13];
@@ -352,11 +521,13 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
-        var sequence = _parity13[code[0]];
+        var sequence = _parity13[ints[0]];
+
         for (var k = 0; k < sequence.Length; ++k)
         {
-            var c = code[k + 1];
+            var c = ints[k + 1];
             var stripes = _bars[c];
+
             if (sequence[k] == Odd)
             {
                 bars[pb++] = stripes[0];
@@ -378,9 +549,10 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
+
         for (var k = 7; k < 13; ++k)
         {
-            var c = code[k];
+            var c = ints[k];
             var stripes = _bars[c];
             bars[pb++] = stripes[0];
             bars[pb++] = stripes[1];
@@ -391,6 +563,7 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
+
         return bars;
     }
 
@@ -406,10 +579,11 @@ public class BarcodeEan : Barcode
             throw new ArgumentNullException(nameof(barCode));
         }
 
-        var code = new int[barCode.Length];
-        for (var k = 0; k < code.Length; ++k)
+        var ints = new int[barCode.Length];
+
+        for (var k = 0; k < ints.Length; ++k)
         {
-            code[k] = barCode[k] - '0';
+            ints[k] = barCode[k] - '0';
         }
 
         var bars = new byte[TotalbarsEan8];
@@ -417,9 +591,10 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
+
         for (var k = 0; k < 4; ++k)
         {
-            var c = code[k];
+            var c = ints[k];
             var stripes = _bars[c];
             bars[pb++] = stripes[0];
             bars[pb++] = stripes[1];
@@ -432,9 +607,10 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
+
         for (var k = 4; k < 8; ++k)
         {
-            var c = code[k];
+            var c = ints[k];
             var stripes = _bars[c];
             bars[pb++] = stripes[0];
             bars[pb++] = stripes[1];
@@ -445,6 +621,7 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
+
         return bars;
     }
 
@@ -460,19 +637,21 @@ public class BarcodeEan : Barcode
             throw new ArgumentNullException(nameof(barCode));
         }
 
-        var code = new int[2];
-        for (var k = 0; k < code.Length; ++k)
+        var ints = new int[2];
+
+        for (var k = 0; k < ints.Length; ++k)
         {
-            code[k] = barCode[k] - '0';
+            ints[k] = barCode[k] - '0';
         }
 
         var bars = new byte[TotalbarsSupp2];
         var pb = 0;
-        var parity = (code[0] * 10 + code[1]) % 4;
+        var parity = (ints[0] * 10 + ints[1]) % 4;
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 2;
         var sequence = _parity2[parity];
+
         for (var k = 0; k < sequence.Length; ++k)
         {
             if (k == 1)
@@ -481,8 +660,9 @@ public class BarcodeEan : Barcode
                 bars[pb++] = 1;
             }
 
-            var c = code[k];
+            var c = ints[k];
             var stripes = _bars[c];
+
             if (sequence[k] == Odd)
             {
                 bars[pb++] = stripes[0];
@@ -514,19 +694,21 @@ public class BarcodeEan : Barcode
             throw new ArgumentNullException(nameof(barCode));
         }
 
-        var code = new int[5];
-        for (var k = 0; k < code.Length; ++k)
+        var ints = new int[5];
+
+        for (var k = 0; k < ints.Length; ++k)
         {
-            code[k] = barCode[k] - '0';
+            ints[k] = barCode[k] - '0';
         }
 
         var bars = new byte[TotalbarsSupp5];
         var pb = 0;
-        var parity = ((code[0] + code[2] + code[4]) * 3 + (code[1] + code[3]) * 9) % 10;
+        var parity = ((ints[0] + ints[2] + ints[4]) * 3 + (ints[1] + ints[3]) * 9) % 10;
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 2;
         var sequence = _parity5[parity];
+
         for (var k = 0; k < sequence.Length; ++k)
         {
             if (k != 0)
@@ -535,8 +717,9 @@ public class BarcodeEan : Barcode
                 bars[pb++] = 1;
             }
 
-            var c = code[k];
+            var c = ints[k];
             var stripes = _bars[c];
+
             if (sequence[k] == Odd)
             {
                 bars[pb++] = stripes[0];
@@ -568,23 +751,26 @@ public class BarcodeEan : Barcode
             throw new ArgumentNullException(nameof(barCode));
         }
 
-        var code = new int[barCode.Length];
-        for (var k = 0; k < code.Length; ++k)
+        var ints = new int[barCode.Length];
+
+        for (var k = 0; k < ints.Length; ++k)
         {
-            code[k] = barCode[k] - '0';
+            ints[k] = barCode[k] - '0';
         }
 
         var bars = new byte[TotalbarsUpce];
-        var flip = code[0] != 0;
+        var flip = ints[0] != 0;
         var pb = 0;
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
-        var sequence = _paritye[code[code.Length - 1]];
-        for (var k = 1; k < code.Length - 1; ++k)
+        var sequence = _paritye[ints[ints.Length - 1]];
+
+        for (var k = 1; k < ints.Length - 1; ++k)
         {
-            var c = code[k];
+            var c = ints[k];
             var stripes = _bars[c];
+
             if (sequence[k - 1] == (flip ? Even : Odd))
             {
                 bars[pb++] = stripes[0];
@@ -607,6 +793,7 @@ public class BarcodeEan : Barcode
         bars[pb++] = 1;
         bars[pb++] = 1;
         bars[pb++] = 1;
+
         return bars;
     }
 
@@ -614,52 +801,63 @@ public class BarcodeEan : Barcode
     {
         var width = 0;
         byte[] bars = null;
+
         switch (codeType)
         {
             case EAN13:
                 bars = GetBarsEan13(code);
                 width = 11 + 12 * 7;
+
                 break;
             case EAN8:
                 bars = GetBarsEan8(code);
                 width = 11 + 8 * 7;
+
                 break;
             case UPCA:
                 bars = GetBarsEan13("0" + code);
                 width = 11 + 12 * 7;
+
                 break;
             case UPCE:
                 bars = GetBarsUpce(code);
                 width = 9 + 6 * 7;
+
                 break;
             case SUPP2:
                 bars = GetBarsSupplemental2(code);
                 width = 6 + 2 * 7;
+
                 break;
             case SUPP5:
                 bars = GetBarsSupplemental5(code);
                 width = 4 + 5 * 7 + 4 * 2;
+
                 break;
             default:
-                throw new InvalidOperationException("Invalid code type.");
+                throw new InvalidOperationException(message: "Invalid code type.");
         }
 
         var height = (int)barHeight;
         var bmp = new SKBitmap(width, height);
+
         for (var h = 0; h < height; ++h)
         {
             var print = true;
             var ptr = 0;
+
             for (var k = 0; k < bars.Length; ++k)
             {
                 int w = bars[k];
                 var c = background;
+
                 if (print)
                 {
                     c = foreground;
                 }
 
                 print = !print;
+
                 for (var j = 0; j < w; ++j)
                 {
                     bmp.SetPixel(ptr++, h, c.ToSKColor());
@@ -706,6 +904,7 @@ public class BarcodeEan : Barcode
         float barStartX = 0;
         float barStartY = 0;
         float textStartY = 0;
+
         if (font != null)
         {
             if (baseline <= 0)
@@ -726,7 +925,7 @@ public class BarcodeEan : Barcode
             case UPCE:
                 if (font != null)
                 {
-                    barStartX += font.GetWidthPoint(code[0], size);
+                    barStartX += font.GetWidthPoint(code[index: 0], size);
                 }
 
                 break;
@@ -734,35 +933,43 @@ public class BarcodeEan : Barcode
 
         byte[] bars = null;
         var guard = _guardEmpty;
+
         switch (codeType)
         {
             case EAN13:
                 bars = GetBarsEan13(code);
                 guard = _guardEan13;
+
                 break;
             case EAN8:
                 bars = GetBarsEan8(code);
                 guard = _guardEan8;
+
                 break;
             case UPCA:
                 bars = GetBarsEan13($"0{code}");
                 guard = _guardUpca;
+
                 break;
             case UPCE:
                 bars = GetBarsUpce(code);
                 guard = _guardUpce;
+
                 break;
             case SUPP2:
                 bars = GetBarsSupplemental2(code);
+
                 break;
             case SUPP5:
                 bars = GetBarsSupplemental5(code);
+
                 break;
         }
 
         var keepBarX = barStartX;
         var print = true;
         float gd = 0;
+
         if (font != null && baseline > 0 && guardBars)
         {
             gd = baseline / 2;
@@ -776,6 +983,7 @@ public class BarcodeEan : Barcode
         for (var k = 0; k < bars.Length; ++k)
         {
             var w = bars[k] * x;
+
             if (print)
             {
                 if (Array.BinarySearch(guard, k) >= 0)
@@ -793,6 +1001,7 @@ public class BarcodeEan : Barcode
         }
 
         cb.Fill();
+
         if (font != null)
         {
             if (textColor != null)
@@ -802,14 +1011,16 @@ public class BarcodeEan : Barcode
 
             cb.BeginText();
             cb.SetFontAndSize(font, size);
+
             switch (codeType)
             {
                 case EAN13:
-                    cb.SetTextMatrix(0, textStartY);
-                    cb.ShowText(code.Substring(0, 1));
+                    cb.SetTextMatrix(x: 0, textStartY);
+                    cb.ShowText(code.Substring(startIndex: 0, length: 1));
+
                     for (var k = 1; k < 13; ++k)
                     {
-                        var c = code.Substring(k, 1);
+                        var c = code.Substring(k, length: 1);
                         var len = font.GetWidthPoint(c, size);
                         var pX = keepBarX + _textposEan13[k - 1] * x - len / 2;
                         cb.SetTextMatrix(pX, textStartY);
@@ -820,7 +1031,7 @@ public class BarcodeEan : Barcode
                 case EAN8:
                     for (var k = 0; k < 8; ++k)
                     {
-                        var c = code.Substring(k, 1);
+                        var c = code.Substring(k, length: 1);
                         var len = font.GetWidthPoint(c, size);
                         var pX = _textposEan8[k] * x - len / 2;
                         cb.SetTextMatrix(pX, textStartY);
@@ -829,11 +1040,12 @@ public class BarcodeEan : Barcode
 
                     break;
                 case UPCA:
-                    cb.SetTextMatrix(0, textStartY);
-                    cb.ShowText(code.Substring(0, 1));
+                    cb.SetTextMatrix(x: 0, textStartY);
+                    cb.ShowText(code.Substring(startIndex: 0, length: 1));
+
                     for (var k = 1; k < 11; ++k)
                     {
-                        var c = code.Substring(k, 1);
+                        var c = code.Substring(k, length: 1);
                         var len = font.GetWidthPoint(c, size);
                         var pX = keepBarX + _textposEan13[k] * x - len / 2;
                         cb.SetTextMatrix(pX, textStartY);
@@ -841,14 +1053,16 @@ public class BarcodeEan : Barcode
                     }
 
                     cb.SetTextMatrix(keepBarX + x * (11 + 12 * 7), textStartY);
-                    cb.ShowText(code.Substring(11, 1));
+                    cb.ShowText(code.Substring(startIndex: 11, length: 1));
+
                     break;
                 case UPCE:
-                    cb.SetTextMatrix(0, textStartY);
-                    cb.ShowText(code.Substring(0, 1));
+                    cb.SetTextMatrix(x: 0, textStartY);
+                    cb.ShowText(code.Substring(startIndex: 0, length: 1));
+
                     for (var k = 1; k < 7; ++k)
                     {
-                        var c = code.Substring(k, 1);
+                        var c = code.Substring(k, length: 1);
                         var len = font.GetWidthPoint(c, size);
                         var pX = keepBarX + _textposEan13[k - 1] * x - len / 2;
                         cb.SetTextMatrix(pX, textStartY);
@@ -856,13 +1070,14 @@ public class BarcodeEan : Barcode
                     }
 
                     cb.SetTextMatrix(keepBarX + x * (9 + 6 * 7), textStartY);
-                    cb.ShowText(code.Substring(7, 1));
+                    cb.ShowText(code.Substring(startIndex: 7, length: 1));
+
                     break;
                 case SUPP2:
                 case SUPP5:
                     for (var k = 0; k < code.Length; ++k)
                     {
-                        var c = code.Substring(k, 1);
+                        var c = code.Substring(k, length: 1);
                         var len = font.GetWidthPoint(c, size);
                         var pX = (7.5f + 9f * k) * x - len / 2;
                         cb.SetTextMatrix(pX, textStartY);

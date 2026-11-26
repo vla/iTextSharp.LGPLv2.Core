@@ -15,71 +15,42 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     internal static readonly string[] CodePages =
     {
-        "1252 Latin 1",
-        "1250 Latin 2: Eastern Europe",
-        "1251 Cyrillic",
-        "1253 Greek",
-        "1254 Turkish",
-        "1255 Hebrew",
-        "1256 Arabic",
-        "1257 Windows Baltic",
-        "1258 Vietnamese",
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        "874 Thai",
-        "932 JIS/Japan",
-        "936 Chinese: Simplified chars--PRC and Singapore",
-        "949 Korean Wansung",
-        "950 Chinese: Traditional chars--Taiwan and Hong Kong",
-        "1361 Korean Johab",
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        "Macintosh Character Set (US Roman)",
-        "OEM Character Set",
-        "Symbol Character Set",
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        "869 IBM Greek",
-        "866 MS-DOS Russian",
-        "865 MS-DOS Nordic",
-        "864 Arabic",
-        "863 MS-DOS Canadian French",
-        "862 Hebrew",
-        "861 MS-DOS Icelandic",
-        "860 MS-DOS Portuguese",
-        "857 IBM Turkish",
-        "855 IBM Cyrillic; primarily Russian",
-        "852 Latin 2",
-        "775 MS-DOS Baltic",
-        "737 Greek; former 437 G",
-        "708 Arabic; ASMO 708",
-        "850 WE/Latin 1",
-        "437 US",
+        "1252 Latin 1", "1250 Latin 2: Eastern Europe", "1251 Cyrillic", "1253 Greek", "1254 Turkish", "1255 Hebrew",
+        "1256 Arabic", "1257 Windows Baltic", "1258 Vietnamese", null, null, null, null, null, null, null, "874 Thai",
+        "932 JIS/Japan", "936 Chinese: Simplified chars--PRC and Singapore", "949 Korean Wansung",
+        "950 Chinese: Traditional chars--Taiwan and Hong Kong", "1361 Korean Johab", null, null, null, null, null, null,
+        null, "Macintosh Character Set (US Roman)", "OEM Character Set", "Symbol Character Set", null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, "869 IBM Greek", "866 MS-DOS Russian",
+        "865 MS-DOS Nordic", "864 Arabic", "863 MS-DOS Canadian French", "862 Hebrew", "861 MS-DOS Icelandic",
+        "860 MS-DOS Portuguese", "857 IBM Turkish", "855 IBM Cyrillic; primarily Russian", "852 Latin 2",
+        "775 MS-DOS Baltic", "737 Greek; former 437 G", "708 Arabic; ASMO 708", "850 WE/Latin 1", "437 US"
     };
+
+    /// <summary>
+    ///     The content of table 'head'.
+    /// </summary>
+    protected readonly FontHeader Head = new();
+
+    /// <summary>
+    ///     The content of table 'hhea'.
+    /// </summary>
+    protected readonly HorizontalHeader Hhea = new();
+
+    protected readonly bool JustNames;
+
+    /// <summary>
+    ///     The map containing the kerning information. It represents the content of
+    ///     table 'kern'. The key is an  Integer  where the top 16 bits
+    ///     are the glyph number for the first character and the lower 16 bits are the
+    ///     glyph number for the second character. The value is the amount of kerning in
+    ///     normalized 1000 units as an  Integer . This value is usually negative.
+    /// </summary>
+    protected readonly NullValueDictionary<int, int> Kerning = new();
+
+    /// <summary>
+    ///     The content of table 'OS/2'.
+    /// </summary>
+    protected readonly WindowsMetrics Os2 = new();
 
     /// <summary>
     ///     All the names auf the Names-Table
@@ -148,16 +119,6 @@ internal class TrueTypeFont : BaseFont
     protected int[] GlyphWidths;
 
     /// <summary>
-    ///     The content of table 'head'.
-    /// </summary>
-    protected readonly FontHeader Head = new();
-
-    /// <summary>
-    ///     The content of table 'hhea'.
-    /// </summary>
-    protected readonly HorizontalHeader Hhea = new();
-
-    /// <summary>
     ///     true  if all the glyphs have the same width.
     /// </summary>
     protected bool IsFixedPitch;
@@ -168,22 +129,6 @@ internal class TrueTypeFont : BaseFont
     ///     -Math.Atan2(hhea.caretSlopeRun, hhea.caretSlopeRise) * 180 / Math.PI
     /// </summary>
     protected double ItalicAngle;
-
-    protected readonly bool JustNames;
-
-    /// <summary>
-    ///     The map containing the kerning information. It represents the content of
-    ///     table 'kern'. The key is an  Integer  where the top 16 bits
-    ///     are the glyph number for the first character and the lower 16 bits are the
-    ///     glyph number for the second character. The value is the amount of kerning in
-    ///     normalized 1000 units as an  Integer . This value is usually negative.
-    /// </summary>
-    protected readonly NullValueDictionary<int, int> Kerning = new();
-
-    /// <summary>
-    ///     The content of table 'OS/2'.
-    /// </summary>
-    protected readonly WindowsMetrics Os2 = new();
 
     /// <summary>
     ///     The file in use.
@@ -230,6 +175,7 @@ internal class TrueTypeFont : BaseFont
         JustNames = justNames;
         var nameBase = GetBaseName(ttFile);
         var ttcName = GetTtcName(nameBase);
+
         if (nameBase.Length < ttFile.Length)
         {
             Style = ttFile.Substring(nameBase.Length);
@@ -240,16 +186,18 @@ internal class TrueTypeFont : BaseFont
         FileName = ttcName;
         FontType = FONT_TYPE_TT;
         TtcIndex = "";
+
         if (ttcName.Length < nameBase.Length)
         {
             TtcIndex = nameBase.Substring(ttcName.Length + 1);
         }
 
-        if (FileName.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
-            FileName.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) ||
-            FileName.EndsWith(".ttc", StringComparison.OrdinalIgnoreCase))
+        if (FileName.EndsWith(value: ".ttf", StringComparison.OrdinalIgnoreCase) ||
+            FileName.EndsWith(value: ".otf", StringComparison.OrdinalIgnoreCase) ||
+            FileName.EndsWith(value: ".ttc", StringComparison.OrdinalIgnoreCase))
         {
             Process(ttfAfm, forceRead);
+
             if (!justNames && Embedded && Os2.FsType == 2)
             {
                 throw new DocumentException(FileName + Style + " cannot be embedded due to licensing restrictions.");
@@ -260,9 +208,13 @@ internal class TrueTypeFont : BaseFont
             throw new DocumentException(FileName + Style + " is not a TTF, OTF or TTC font file.");
         }
 
-        if (!encoding.StartsWith("#", StringComparison.Ordinal))
+        if (!encoding.StartsWith(value: '#'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																								
+		))
         {
-            PdfEncodings.ConvertToBytes(" ", enc); // check if the encoding exists
+            PdfEncodings.ConvertToBytes(text: " ", enc); // check if the encoding exists
         }
 
         CreateEncoding();
@@ -297,6 +249,7 @@ internal class TrueTypeFont : BaseFont
             var cp = ((long)Os2.UlCodePageRange2 << 32) + (Os2.UlCodePageRange1 & 0xffffffffL);
             var count = 0;
             long bit = 1;
+
             for (var k = 0; k < 64; ++k)
             {
                 if ((cp & bit) != 0 && CodePages[k] != null)
@@ -310,6 +263,7 @@ internal class TrueTypeFont : BaseFont
             var ret = new string[count];
             count = 0;
             bit = 1;
+
             for (var k = 0; k < 64; ++k)
             {
                 if ((cp & bit) != 0 && CodePages[k] != null)
@@ -366,8 +320,8 @@ internal class TrueTypeFont : BaseFont
     {
         get
         {
-            int[] tableLocation;
-            tableLocation = Tables["name"];
+            var tableLocation = Tables[key: "name"];
+
             if (tableLocation == null)
             {
                 throw new DocumentException("Table 'name' does not exist in " + FileName + Style);
@@ -376,6 +330,7 @@ internal class TrueTypeFont : BaseFont
             Rf.Seek(tableLocation[0] + 2);
             var numRecords = Rf.ReadUnsignedShort();
             var startOfStorage = Rf.ReadUnsignedShort();
+
             for (var k = 0; k < numRecords; ++k)
             {
                 var platformId = Rf.ReadUnsignedShort();
@@ -384,9 +339,11 @@ internal class TrueTypeFont : BaseFont
                 var nameId = Rf.ReadUnsignedShort();
                 var length = Rf.ReadUnsignedShort();
                 var offset = Rf.ReadUnsignedShort();
+
                 if (nameId == 6)
                 {
                     Rf.Seek(tableLocation[0] + startOfStorage + offset);
+
                     if (platformId == 0 || platformId == 3)
                     {
                         return ReadUnicodeString(length);
@@ -397,7 +354,8 @@ internal class TrueTypeFont : BaseFont
             }
 
             var file = new FileInfo(FileName);
-            return file.Name.Replace(' ', '-');
+
+            return file.Name.Replace(oldChar: ' ', newChar: '-');
         }
     }
 
@@ -467,11 +425,16 @@ internal class TrueTypeFont : BaseFont
     {
         if (Cff)
         {
-            return new StreamFont(ReadCffFont(), "Type1C", compressionLevel);
+            return new StreamFont(ReadCffFont(), subType: "Type1C", compressionLevel);
         }
 
         var b = GetFullFont();
-        int[] lengths = { b.Length };
+
+        int[] lengths =
+        {
+            b.Length
+        };
+
         return new StreamFont(b, lengths, compressionLevel);
     }
 
@@ -484,6 +447,7 @@ internal class TrueTypeFont : BaseFont
     public override int GetKerning(int char1, int char2)
     {
         var metrics = GetMetricsTt(char1);
+
         if (metrics == null)
         {
             return 0;
@@ -491,12 +455,14 @@ internal class TrueTypeFont : BaseFont
 
         var c1 = metrics[0];
         metrics = GetMetricsTt(char2);
+
         if (metrics == null)
         {
             return 0;
         }
 
         var c2 = metrics[0];
+
         return Kerning[(c1 << 16) + c2];
     }
 
@@ -551,6 +517,7 @@ internal class TrueTypeFont : BaseFont
     public override bool SetKerning(int char1, int char2, int kern)
     {
         var metrics = GetMetricsTt(char1);
+
         if (metrics == null)
         {
             return false;
@@ -558,6 +525,7 @@ internal class TrueTypeFont : BaseFont
 
         var c1 = metrics[0];
         metrics = GetMetricsTt(char2);
+
         if (metrics == null)
         {
             return false;
@@ -565,13 +533,14 @@ internal class TrueTypeFont : BaseFont
 
         var c2 = metrics[0];
         Kerning[(c1 << 16) + c2] = kern;
+
         return true;
     }
 
     internal void CheckCff()
     {
-        int[] tableLocation;
-        tableLocation = Tables["CFF "];
+        var tableLocation = Tables[key: "CFF "];
+
         if (tableLocation != null)
         {
             Cff = true;
@@ -587,8 +556,8 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     internal void FillTables()
     {
-        int[] tableLocation;
-        tableLocation = Tables["head"];
+        var tableLocation = Tables[key: "head"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'head' does not exist in " + FileName + Style);
@@ -597,14 +566,15 @@ internal class TrueTypeFont : BaseFont
         Rf.Seek(tableLocation[0] + 16);
         Head.Flags = Rf.ReadUnsignedShort();
         Head.UnitsPerEm = Rf.ReadUnsignedShort();
-        Rf.SkipBytes(16);
+        Rf.SkipBytes(n: 16);
         Head.XMin = Rf.ReadShort();
         Head.YMin = Rf.ReadShort();
         Head.XMax = Rf.ReadShort();
         Head.YMax = Rf.ReadShort();
         Head.MacStyle = Rf.ReadUnsignedShort();
 
-        tableLocation = Tables["hhea"];
+        tableLocation = Tables[key: "hhea"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'hhea' does not exist " + FileName + Style);
@@ -620,10 +590,11 @@ internal class TrueTypeFont : BaseFont
         Hhea.XMaxExtent = Rf.ReadShort();
         Hhea.CaretSlopeRise = Rf.ReadShort();
         Hhea.CaretSlopeRun = Rf.ReadShort();
-        Rf.SkipBytes(12);
+        Rf.SkipBytes(n: 12);
         Hhea.NumberOfHMetrics = Rf.ReadUnsignedShort();
 
-        tableLocation = Tables["OS/2"];
+        tableLocation = Tables[key: "OS/2"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'OS/2' does not exist in " + FileName + Style);
@@ -647,13 +618,14 @@ internal class TrueTypeFont : BaseFont
         Os2.YStrikeoutPosition = Rf.ReadShort();
         Os2.SFamilyClass = Rf.ReadShort();
         Rf.ReadFully(Os2.Panose);
-        Rf.SkipBytes(16);
+        Rf.SkipBytes(n: 16);
         Rf.ReadFully(Os2.AchVendId);
         Os2.FsSelection = Rf.ReadUnsignedShort();
         Os2.UsFirstCharIndex = Rf.ReadUnsignedShort();
         Os2.UsLastCharIndex = Rf.ReadUnsignedShort();
         Os2.STypoAscender = Rf.ReadShort();
         Os2.STypoDescender = Rf.ReadShort();
+
         if (Os2.STypoDescender > 0)
         {
             Os2.STypoDescender = (short)-Os2.STypoDescender;
@@ -664,6 +636,7 @@ internal class TrueTypeFont : BaseFont
         Os2.UsWinDescent = Rf.ReadUnsignedShort();
         Os2.UlCodePageRange1 = 0;
         Os2.UlCodePageRange2 = 0;
+
         if (version > 0)
         {
             Os2.UlCodePageRange1 = Rf.ReadInt();
@@ -672,7 +645,7 @@ internal class TrueTypeFont : BaseFont
 
         if (version > 1)
         {
-            Rf.SkipBytes(2);
+            Rf.SkipBytes(n: 2);
             Os2.SCapHeight = Rf.ReadShort();
         }
         else
@@ -680,10 +653,12 @@ internal class TrueTypeFont : BaseFont
             Os2.SCapHeight = (int)(0.7 * Head.UnitsPerEm);
         }
 
-        tableLocation = Tables["post"];
+        tableLocation = Tables[key: "post"];
+
         if (tableLocation == null)
         {
             ItalicAngle = -Math.Atan2(Hhea.CaretSlopeRun, Hhea.CaretSlopeRise) * 180 / Math.PI;
+
             return;
         }
 
@@ -703,8 +678,8 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     internal string[][] GetAllNames()
     {
-        int[] tableLocation;
-        tableLocation = Tables["name"];
+        var tableLocation = Tables[key: "name"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'name' does not exist in " + FileName + Style);
@@ -714,6 +689,7 @@ internal class TrueTypeFont : BaseFont
         var numRecords = Rf.ReadUnsignedShort();
         var startOfStorage = Rf.ReadUnsignedShort();
         List<string[]> names = new();
+
         for (var k = 0; k < numRecords; ++k)
         {
             var platformId = Rf.ReadUnsignedShort();
@@ -725,6 +701,7 @@ internal class TrueTypeFont : BaseFont
             var pos = Rf.FilePointer;
             Rf.Seek(tableLocation[0] + startOfStorage + offset);
             string name;
+
             if (platformId == 0 || platformId == 3 || (platformId == 2 && platformEncodingId == 1))
             {
                 name = ReadUnicodeString(length);
@@ -735,17 +712,17 @@ internal class TrueTypeFont : BaseFont
             }
 
             names.Add(new[]
-                      {
-                          nameId.ToString(CultureInfo.InvariantCulture),
-                          platformId.ToString(CultureInfo.InvariantCulture),
-                          platformEncodingId.ToString(CultureInfo.InvariantCulture),
-                          languageId.ToString(CultureInfo.InvariantCulture),
-                          name,
-                      });
+            {
+                nameId.ToString(CultureInfo.InvariantCulture), platformId.ToString(CultureInfo.InvariantCulture),
+                platformEncodingId.ToString(CultureInfo.InvariantCulture),
+                languageId.ToString(CultureInfo.InvariantCulture), name
+            });
+
             Rf.Seek(pos);
         }
 
         var thisName = new string[names.Count][];
+
         for (var k = 0; k < names.Count; ++k)
         {
             thisName[k] = names[k];
@@ -762,8 +739,8 @@ internal class TrueTypeFont : BaseFont
     /// <param name="id">the name id to retrieve</param>
     internal string[][] GetNames(int id)
     {
-        int[] tableLocation;
-        tableLocation = Tables["name"];
+        var tableLocation = Tables[key: "name"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'name' does not exist in " + FileName + Style);
@@ -773,6 +750,7 @@ internal class TrueTypeFont : BaseFont
         var numRecords = Rf.ReadUnsignedShort();
         var startOfStorage = Rf.ReadUnsignedShort();
         List<string[]> names = new();
+
         for (var k = 0; k < numRecords; ++k)
         {
             var platformId = Rf.ReadUnsignedShort();
@@ -781,11 +759,13 @@ internal class TrueTypeFont : BaseFont
             var nameId = Rf.ReadUnsignedShort();
             var length = Rf.ReadUnsignedShort();
             var offset = Rf.ReadUnsignedShort();
+
             if (nameId == id)
             {
                 var pos = Rf.FilePointer;
                 Rf.Seek(tableLocation[0] + startOfStorage + offset);
                 string name;
+
                 if (platformId == 0 || platformId == 3 || (platformId == 2 && platformEncodingId == 1))
                 {
                     name = ReadUnicodeString(length);
@@ -796,17 +776,18 @@ internal class TrueTypeFont : BaseFont
                 }
 
                 names.Add(new[]
-                          {
-                              platformId.ToString(CultureInfo.InvariantCulture),
-                              platformEncodingId.ToString(CultureInfo.InvariantCulture),
-                              languageId.ToString(CultureInfo.InvariantCulture),
-                              name,
-                          });
+                {
+                    platformId.ToString(CultureInfo.InvariantCulture),
+                    platformEncodingId.ToString(CultureInfo.InvariantCulture),
+                    languageId.ToString(CultureInfo.InvariantCulture), name
+                });
+
                 Rf.Seek(pos);
             }
         }
 
         var thisName = new string[names.Count][];
+
         for (var k = 0; k < names.Count; ++k)
         {
             thisName[k] = names[k];
@@ -825,6 +806,7 @@ internal class TrueTypeFont : BaseFont
     internal override int GetRawWidth(int c, string name)
     {
         var metric = GetMetricsTt(c);
+
         if (metric == null)
         {
             return 0;
@@ -858,19 +840,22 @@ internal class TrueTypeFont : BaseFont
             if (TtcIndex.Length > 0)
             {
                 var dirIdx = int.Parse(TtcIndex, CultureInfo.InvariantCulture);
+
                 if (dirIdx < 0)
                 {
                     throw new DocumentException("The font index for " + FileName + " must be positive.");
                 }
 
-                var mainTag = ReadStandardString(4);
-                if (!mainTag.Equals("ttcf", StringComparison.Ordinal))
+                var mainTag = ReadStandardString(length: 4);
+
+                if (!mainTag.Equals(value: "ttcf", StringComparison.Ordinal))
                 {
                     throw new DocumentException(FileName + " is not a valid TTC file.");
                 }
 
-                Rf.SkipBytes(4);
+                Rf.SkipBytes(n: 4);
                 var dirCount = Rf.ReadInt();
+
                 if (dirIdx >= dirCount)
                 {
                     throw new DocumentException("The font index for " + FileName + " must be between 0 and " +
@@ -883,17 +868,19 @@ internal class TrueTypeFont : BaseFont
 
             Rf.Seek(DirectoryOffset);
             var ttId = Rf.ReadInt();
+
             if (ttId != 0x00010000 && ttId != 0x4F54544F)
             {
                 throw new DocumentException(FileName + " is not a valid TTF or OTF file.");
             }
 
             var numTables = Rf.ReadUnsignedShort();
-            Rf.SkipBytes(6);
+            Rf.SkipBytes(n: 6);
+
             for (var k = 0; k < numTables; ++k)
             {
-                var tag = ReadStandardString(4);
-                Rf.SkipBytes(4);
+                var tag = ReadStandardString(length: 4);
+                Rf.SkipBytes(n: 4);
                 var tableLocation = new int[2];
                 tableLocation[0] = Rf.ReadInt();
                 tableLocation[1] = Rf.ReadInt();
@@ -902,9 +889,10 @@ internal class TrueTypeFont : BaseFont
 
             CheckCff();
             FontName = BaseFont;
-            FullName = GetNames(4); //full name
-            FamilyName = GetNames(1); //family name
+            FullName = GetNames(id: 4); //full name
+            FamilyName = GetNames(id: 1); //family name
             allNameEntries = GetAllNames();
+
             if (!JustNames)
             {
                 FillTables();
@@ -920,6 +908,7 @@ internal class TrueTypeFont : BaseFont
             if (Rf != null)
             {
                 Rf.Close();
+
                 if (!Embedded)
                 {
                     Rf = null;
@@ -936,15 +925,15 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     internal void ReadCMaps()
     {
-        int[] tableLocation;
-        tableLocation = Tables["cmap"];
+        var tableLocation = Tables[key: "cmap"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'cmap' does not exist in " + FileName + Style);
         }
 
         Rf.Seek(tableLocation[0]);
-        Rf.SkipBytes(2);
+        Rf.SkipBytes(n: 2);
         var numTables = Rf.ReadUnsignedShort();
         FontSpecific = false;
         var map10 = 0;
@@ -959,6 +948,7 @@ internal class TrueTypeFont : BaseFont
             var platId = Rf.ReadUnsignedShort();
             var platSpecId = Rf.ReadUnsignedShort();
             var offset = Rf.ReadInt();
+
             if (platId == 3 && platSpecId == 0)
             {
                 FontSpecific = true;
@@ -983,16 +973,20 @@ internal class TrueTypeFont : BaseFont
         {
             Rf.Seek(tableLocation[0] + map10);
             var format = Rf.ReadUnsignedShort();
+
             switch (format)
             {
                 case 0:
                     Cmap10 = ReadFormat0();
+
                     break;
                 case 4:
                     Cmap10 = ReadFormat4();
+
                     break;
                 case 6:
                     Cmap10 = ReadFormat6();
+
                     break;
             }
         }
@@ -1001,6 +995,7 @@ internal class TrueTypeFont : BaseFont
         {
             Rf.Seek(tableLocation[0] + map31);
             var format = Rf.ReadUnsignedShort();
+
             if (format == 4)
             {
                 Cmap31 = ReadFormat4();
@@ -1011,6 +1006,7 @@ internal class TrueTypeFont : BaseFont
         {
             Rf.Seek(tableLocation[0] + map30);
             var format = Rf.ReadUnsignedShort();
+
             if (format == 4)
             {
                 Cmap10 = ReadFormat4();
@@ -1021,19 +1017,24 @@ internal class TrueTypeFont : BaseFont
         {
             Rf.Seek(tableLocation[0] + mapExt);
             var format = Rf.ReadUnsignedShort();
+
             switch (format)
             {
                 case 0:
                     CmapExt = ReadFormat0();
+
                     break;
                 case 4:
                     CmapExt = ReadFormat4();
+
                     break;
                 case 6:
                     CmapExt = ReadFormat6();
+
                     break;
                 case 12:
                     CmapExt = ReadFormat12();
+
                     break;
             }
         }
@@ -1048,7 +1049,8 @@ internal class TrueTypeFont : BaseFont
     internal INullValueDictionary<int, int[]> ReadFormat0()
     {
         var h = new NullValueDictionary<int, int[]>();
-        Rf.SkipBytes(4);
+        Rf.SkipBytes(n: 4);
+
         for (var k = 0; k < 256; ++k)
         {
             var r = new int[2];
@@ -1063,15 +1065,17 @@ internal class TrueTypeFont : BaseFont
     internal INullValueDictionary<int, int[]> ReadFormat12()
     {
         var h = new NullValueDictionary<int, int[]>();
-        Rf.SkipBytes(2);
+        Rf.SkipBytes(n: 2);
         var tableLenght = Rf.ReadInt();
-        Rf.SkipBytes(4);
+        Rf.SkipBytes(n: 4);
         var nGroups = Rf.ReadInt();
+
         for (var k = 0; k < nGroups; k++)
         {
             var startCharCode = Rf.ReadInt();
             var endCharCode = Rf.ReadInt();
             var startGlyphId = Rf.ReadInt();
+
             for (var i = startCharCode; i <= endCharCode; i++)
             {
                 var r = new int[2];
@@ -1095,35 +1099,40 @@ internal class TrueTypeFont : BaseFont
     {
         var h = new NullValueDictionary<int, int[]>();
         var tableLenght = Rf.ReadUnsignedShort();
-        Rf.SkipBytes(2);
+        Rf.SkipBytes(n: 2);
         var segCount = Rf.ReadUnsignedShort() / 2;
-        Rf.SkipBytes(6);
+        Rf.SkipBytes(n: 6);
         var endCount = new int[segCount];
+
         for (var k = 0; k < segCount; ++k)
         {
             endCount[k] = Rf.ReadUnsignedShort();
         }
 
-        Rf.SkipBytes(2);
+        Rf.SkipBytes(n: 2);
         var startCount = new int[segCount];
+
         for (var k = 0; k < segCount; ++k)
         {
             startCount[k] = Rf.ReadUnsignedShort();
         }
 
         var idDelta = new int[segCount];
+
         for (var k = 0; k < segCount; ++k)
         {
             idDelta[k] = Rf.ReadUnsignedShort();
         }
 
         var idRo = new int[segCount];
+
         for (var k = 0; k < segCount; ++k)
         {
             idRo[k] = Rf.ReadUnsignedShort();
         }
 
         var glyphId = new int[tableLenght / 2 - 8 - segCount * 4];
+
         for (var k = 0; k < glyphId.Length; ++k)
         {
             glyphId[k] = Rf.ReadUnsignedShort();
@@ -1132,6 +1141,7 @@ internal class TrueTypeFont : BaseFont
         for (var k = 0; k < segCount; ++k)
         {
             int glyph;
+
             for (var j = startCount[k]; j <= endCount[k] && j != 0xFFFF; ++j)
             {
                 if (idRo[k] == 0)
@@ -1141,6 +1151,7 @@ internal class TrueTypeFont : BaseFont
                 else
                 {
                     var idx = k + idRo[k] / 2 - segCount + j - startCount[k];
+
                     if (idx >= glyphId.Length)
                     {
                         continue;
@@ -1169,9 +1180,10 @@ internal class TrueTypeFont : BaseFont
     internal INullValueDictionary<int, int[]> ReadFormat6()
     {
         var h = new NullValueDictionary<int, int[]>();
-        Rf.SkipBytes(4);
+        Rf.SkipBytes(n: 4);
         var startCode = Rf.ReadUnsignedShort();
         var codeCount = Rf.ReadUnsignedShort();
+
         for (var k = 0; k < codeCount; ++k)
         {
             var r = new int[2];
@@ -1189,8 +1201,8 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     internal void ReadKerning()
     {
-        int[] tableLocation;
-        tableLocation = Tables["kern"];
+        var tableLocation = Tables[key: "kern"];
+
         if (tableLocation == null)
         {
             return;
@@ -1200,17 +1212,20 @@ internal class TrueTypeFont : BaseFont
         var nTables = Rf.ReadUnsignedShort();
         var checkpoint = tableLocation[0] + 4;
         var length = 0;
+
         for (var k = 0; k < nTables; ++k)
         {
             checkpoint += length;
             Rf.Seek(checkpoint);
-            Rf.SkipBytes(2);
+            Rf.SkipBytes(n: 2);
             length = Rf.ReadUnsignedShort();
             var coverage = Rf.ReadUnsignedShort();
+
             if ((coverage & 0xfff7) == 0x0001)
             {
                 var nPairs = Rf.ReadUnsignedShort();
-                Rf.SkipBytes(6);
+                Rf.SkipBytes(n: 6);
+
                 for (var j = 0; j < nPairs; ++j)
                 {
                     var pair = Rf.ReadInt();
@@ -1235,10 +1250,12 @@ internal class TrueTypeFont : BaseFont
         var lastChar = (int)parms[1];
         var shortTag = (byte[])parms[2];
         var subsetp = (bool)parms[3] && subset;
+
         if (!subsetp)
         {
             firstChar = 0;
             lastChar = shortTag.Length - 1;
+
             for (var k = 0; k < shortTag.Length; ++k)
             {
                 shortTag[k] = 1;
@@ -1249,11 +1266,12 @@ internal class TrueTypeFont : BaseFont
         PdfObject pobj = null;
         PdfIndirectObject obj = null;
         var subsetPrefix = "";
+
         if (Embedded)
         {
             if (Cff)
             {
-                pobj = new StreamFont(ReadCffFont(), "Type1C", compressionLevel);
+                pobj = new StreamFont(ReadCffFont(), subType: "Type1C", compressionLevel);
                 obj = writer.AddToBody(pobj);
                 indFont = obj.IndirectReference;
             }
@@ -1265,14 +1283,17 @@ internal class TrueTypeFont : BaseFont
                 }
 
                 var glyphs = new NullValueDictionary<int, int[]>();
+
                 for (var k = firstChar; k <= lastChar; ++k)
                 {
                     if (shortTag[k] != 0)
                     {
                         int[] metrics = null;
+
                         if (SpecialMap != null)
                         {
                             var cd = GlyphList.NameToUnicode(differences[k]);
+
                             if (cd != null)
                             {
                                 metrics = GetMetricsTt(cd[0]);
@@ -1297,16 +1318,14 @@ internal class TrueTypeFont : BaseFont
                     }
                 }
 
-                AddRangeUni(glyphs, false, subsetp);
+                AddRangeUni(glyphs, includeMetrics: false, subsetp);
                 byte[] b = null;
+
                 if (subsetp || DirectoryOffset != 0 || SubsetRanges != null)
                 {
-                    var sb = new TrueTypeFontSubSet(FileName,
-                                                    new RandomAccessFileOrArray(Rf),
-                                                    glyphs,
-                                                    DirectoryOffset,
-                                                    true,
-                                                    !subsetp);
+                    var sb = new TrueTypeFontSubSet(FileName, new RandomAccessFileOrArray(Rf), glyphs, DirectoryOffset,
+                        includeCmap: true, !subsetp);
+
                     b = sb.Process();
                 }
                 else
@@ -1314,14 +1333,19 @@ internal class TrueTypeFont : BaseFont
                     b = GetFullFont();
                 }
 
-                int[] lengths = { b.Length };
+                int[] lengths =
+                {
+                    b.Length
+                };
+
                 pobj = new StreamFont(b, lengths, compressionLevel);
                 obj = writer.AddToBody(pobj);
                 indFont = obj.IndirectReference;
             }
         }
 
-        pobj = GetFontDescriptor(indFont, subsetPrefix, null);
+        pobj = GetFontDescriptor(indFont, subsetPrefix, cidset: null);
+
         if (pobj != null)
         {
             obj = writer.AddToBody(pobj);
@@ -1339,10 +1363,11 @@ internal class TrueTypeFont : BaseFont
     ///     @since   2.1.3
     /// </summary>
     /// <returns>a byte array</returns>
-    protected internal byte[] ReadCffFont()
+    internal protected byte[] ReadCffFont()
     {
         var rf2 = new RandomAccessFileOrArray(Rf);
         var b = new byte[CffLength];
+
         try
         {
             rf2.ReOpen();
@@ -1367,12 +1392,17 @@ internal class TrueTypeFont : BaseFont
     protected static int[] CompactRanges(List<int[]> ranges)
     {
         List<int[]> simp = new();
+
         for (var k = 0; k < ranges.Count; ++k)
         {
             var r = ranges[k];
+
             for (var j = 0; j < r.Length; j += 2)
             {
-                simp.Add(new[] { Math.Max(0, Math.Min(r[j], r[j + 1])), Math.Min(0xffff, Math.Max(r[j], r[j + 1])) });
+                simp.Add(new[]
+                {
+                    Math.Max(val1: 0, Math.Min(r[j], r[j + 1])), Math.Min(val1: 0xffff, Math.Max(r[j], r[j + 1]))
+                });
             }
         }
 
@@ -1382,6 +1412,7 @@ internal class TrueTypeFont : BaseFont
             {
                 var r1 = simp[k1];
                 var r2 = simp[k2];
+
                 if ((r1[0] >= r2[0] && r1[0] <= r2[1]) || (r1[1] >= r2[0] && r1[0] <= r2[1]))
                 {
                     r1[0] = Math.Min(r1[0], r2[0]);
@@ -1393,6 +1424,7 @@ internal class TrueTypeFont : BaseFont
         }
 
         var s = new int[simp.Count * 2];
+
         for (var k = 0; k < simp.Count; ++k)
         {
             var r = simp[k];
@@ -1412,21 +1444,29 @@ internal class TrueTypeFont : BaseFont
     /// <returns>the simple file name</returns>
     protected static string GetTtcName(string name)
     {
-        var idx = name.IndexOf(".ttc,", StringComparison.OrdinalIgnoreCase);
+        var idx = name.IndexOf(value: ".ttc,", StringComparison.OrdinalIgnoreCase);
+
         if (idx < 0)
         {
             return name;
         }
 
-        return name.Substring(0, idx + 4);
+        return name.Substring(startIndex: 0, idx + 4);
     }
 
     protected void AddRangeUni(INullValueDictionary<int, int[]> longTag, bool includeMetrics, bool subsetp)
     {
         if (!subsetp && (SubsetRanges != null || DirectoryOffset > 0))
         {
-            var rg = SubsetRanges == null && DirectoryOffset > 0 ? new[] { 0, 0xffff } : CompactRanges(SubsetRanges);
+            var rg = SubsetRanges == null && DirectoryOffset > 0
+                ? new[]
+                {
+                    0, 0xffff
+                }
+                : CompactRanges(SubsetRanges);
+
             INullValueDictionary<int, int[]> usemap;
+
             if (!FontSpecific && Cmap31 != null)
             {
                 usemap = Cmap31;
@@ -1448,6 +1488,7 @@ internal class TrueTypeFont : BaseFont
             {
                 var v = e.Value;
                 var gi = v[0];
+
                 if (longTag.ContainsKey(gi))
                 {
                     continue;
@@ -1455,18 +1496,25 @@ internal class TrueTypeFont : BaseFont
 
                 var c = e.Key;
                 var skip = true;
+
                 for (var k = 0; k < rg.Length; k += 2)
                 {
                     if (c >= rg[k] && c <= rg[k + 1])
                     {
                         skip = false;
+
                         break;
                     }
                 }
 
                 if (!skip)
                 {
-                    longTag[gi] = includeMetrics ? new[] { v[0], v[1], c } : null;
+                    longTag[gi] = includeMetrics
+                        ? new[]
+                        {
+                            v[0], v[1], c
+                        }
+                        : null;
                 }
             }
         }
@@ -1483,12 +1531,13 @@ internal class TrueTypeFont : BaseFont
     /// <param name="fontDescriptor">the indirect reference to a PdfDictionary containing the font descriptor or  null </param>
     /// <returns>the PdfDictionary containing the font dictionary</returns>
     protected PdfDictionary GetFontBaseType(PdfIndirectReference fontDescriptor,
-                                            string subsetPrefix,
-                                            int firstChar,
-                                            int lastChar,
-                                            byte[] shortTag)
+        string subsetPrefix,
+        int firstChar,
+        int lastChar,
+        byte[] shortTag)
     {
         var dic = new PdfDictionary(PdfName.Font);
+
         if (Cff)
         {
             dic.Put(PdfName.Subtype, PdfName.Type1);
@@ -1501,6 +1550,7 @@ internal class TrueTypeFont : BaseFont
         }
 
         dic.Put(PdfName.Basefont, new PdfName(subsetPrefix + FontName + Style));
+
         if (!FontSpecific)
         {
             for (var k = firstChar; k <= lastChar; ++k)
@@ -1508,6 +1558,7 @@ internal class TrueTypeFont : BaseFont
                 if (!differences[k].Equals(notdef, StringComparison.Ordinal))
                 {
                     firstChar = k;
+
                     break;
                 }
             }
@@ -1516,15 +1567,16 @@ internal class TrueTypeFont : BaseFont
                 encoding.Equals(MACROMAN, StringComparison.Ordinal))
             {
                 dic.Put(PdfName.Encoding,
-                        encoding.Equals(CP1252, StringComparison.Ordinal)
-                            ? PdfName.WinAnsiEncoding
-                            : PdfName.MacRomanEncoding);
+                    encoding.Equals(CP1252, StringComparison.Ordinal)
+                        ? PdfName.WinAnsiEncoding
+                        : PdfName.MacRomanEncoding);
             }
             else
             {
                 var enc = new PdfDictionary(PdfName.Encoding);
                 var dif = new PdfArray();
                 var gap = true;
+
                 for (var k = firstChar; k <= lastChar; ++k)
                 {
                     if (shortTag[k] != 0)
@@ -1551,11 +1603,12 @@ internal class TrueTypeFont : BaseFont
         dic.Put(PdfName.Firstchar, new PdfNumber(firstChar));
         dic.Put(PdfName.Lastchar, new PdfNumber(lastChar));
         var wd = new PdfArray();
+
         for (var k = firstChar; k <= lastChar; ++k)
         {
             if (shortTag[k] == 0)
             {
-                wd.Add(new PdfNumber(0));
+                wd.Add(new PdfNumber(value: 0));
             }
             else
             {
@@ -1564,6 +1617,7 @@ internal class TrueTypeFont : BaseFont
         }
 
         dic.Put(PdfName.Widths, wd);
+
         if (fontDescriptor != null)
         {
             dic.Put(PdfName.Fontdescriptor, fontDescriptor);
@@ -1581,18 +1635,18 @@ internal class TrueTypeFont : BaseFont
     /// <param name="cidset"></param>
     /// <returns>the PdfDictionary containing the font descriptor or  null </returns>
     protected PdfDictionary GetFontDescriptor(PdfIndirectReference fontStream,
-                                              string subsetPrefix,
-                                              PdfIndirectReference cidset)
+        string subsetPrefix,
+        PdfIndirectReference cidset)
     {
         var dic = new PdfDictionary(PdfName.Fontdescriptor);
         dic.Put(PdfName.Ascent, new PdfNumber(Os2.STypoAscender * 1000 / Head.UnitsPerEm));
         dic.Put(PdfName.Capheight, new PdfNumber(Os2.SCapHeight * 1000 / Head.UnitsPerEm));
         dic.Put(PdfName.Descent, new PdfNumber(Os2.STypoDescender * 1000 / Head.UnitsPerEm));
+
         dic.Put(PdfName.Fontbbox,
-                new PdfRectangle((float)Head.XMin * 1000 / Head.UnitsPerEm,
-                                 (float)Head.YMin * 1000 / Head.UnitsPerEm,
-                                 (float)Head.XMax * 1000 / Head.UnitsPerEm,
-                                 (float)Head.YMax * 1000 / Head.UnitsPerEm));
+            new PdfRectangle((float)Head.XMin * 1000 / Head.UnitsPerEm, (float)Head.YMin * 1000 / Head.UnitsPerEm,
+                (float)Head.XMax * 1000 / Head.UnitsPerEm, (float)Head.YMax * 1000 / Head.UnitsPerEm));
+
         if (cidset != null)
         {
             dic.Put(PdfName.Cidset, cidset);
@@ -1600,7 +1654,7 @@ internal class TrueTypeFont : BaseFont
 
         if (Cff)
         {
-            if (encoding.StartsWith("Identity-", StringComparison.Ordinal))
+            if (encoding.StartsWith(value: "Identity-", StringComparison.Ordinal))
             {
                 dic.Put(PdfName.Fontname, new PdfName(subsetPrefix + FontName + "-" + encoding));
             }
@@ -1615,7 +1669,8 @@ internal class TrueTypeFont : BaseFont
         }
 
         dic.Put(PdfName.Italicangle, new PdfNumber(ItalicAngle));
-        dic.Put(PdfName.Stemv, new PdfNumber(80));
+        dic.Put(PdfName.Stemv, new PdfNumber(value: 80));
+
         if (fontStream != null)
         {
             if (Cff)
@@ -1629,12 +1684,14 @@ internal class TrueTypeFont : BaseFont
         }
 
         var flags = 0;
+
         if (IsFixedPitch)
         {
             flags |= 1;
         }
 
         flags |= FontSpecific ? 4 : 32;
+
         if ((Head.MacStyle & 2) != 0)
         {
             flags |= 64;
@@ -1653,12 +1710,14 @@ internal class TrueTypeFont : BaseFont
     protected byte[] GetFullFont()
     {
         RandomAccessFileOrArray rf2 = null;
+
         try
         {
             rf2 = new RandomAccessFileOrArray(Rf);
             rf2.ReOpen();
             var b = new byte[rf2.Length];
             rf2.ReadFully(b);
+
             return b;
         }
         finally
@@ -1694,6 +1753,7 @@ internal class TrueTypeFont : BaseFont
     protected override int[] GetRawCharBBox(int c, string name)
     {
         INullValueDictionary<int, int[]> map = null;
+
         if (name == null || Cmap31 == null)
         {
             map = Cmap10;
@@ -1709,6 +1769,7 @@ internal class TrueTypeFont : BaseFont
         }
 
         var metric = map[c];
+
         if (metric == null || Bboxes == null)
         {
             return null;
@@ -1725,8 +1786,8 @@ internal class TrueTypeFont : BaseFont
     /// </summary>
     protected void ReadGlyphWidths()
     {
-        int[] tableLocation;
-        tableLocation = Tables["hmtx"];
+        var tableLocation = Tables[key: "hmtx"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'hmtx' does not exist in " + FileName + Style);
@@ -1734,6 +1795,7 @@ internal class TrueTypeFont : BaseFont
 
         Rf.Seek(tableLocation[0]);
         GlyphWidths = new int[Hhea.NumberOfHMetrics];
+
         for (var k = 0; k < Hhea.NumberOfHMetrics; ++k)
         {
             GlyphWidths[k] = Rf.ReadUnsignedShort() * 1000 / Head.UnitsPerEm;
@@ -1752,7 +1814,8 @@ internal class TrueTypeFont : BaseFont
     {
         var buf = new byte[length];
         Rf.ReadFully(buf);
-        return EncodingsRegistry.GetEncoding(1252).GetString(buf);
+
+        return EncodingsRegistry.GetEncoding(codepage: 1252).GetString(buf);
     }
 
     /// <summary>
@@ -1767,6 +1830,7 @@ internal class TrueTypeFont : BaseFont
     {
         var buf = new StringBuilder();
         length /= 2;
+
         for (var k = 0; k < length; ++k)
         {
             buf.Append(Rf.ReadChar());
@@ -1777,8 +1841,8 @@ internal class TrueTypeFont : BaseFont
 
     private void readBbox()
     {
-        int[] tableLocation;
-        tableLocation = Tables["head"];
+        var tableLocation = Tables[key: "head"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'head' does not exist in " + FileName + Style);
@@ -1786,7 +1850,8 @@ internal class TrueTypeFont : BaseFont
 
         Rf.Seek(tableLocation[0] + TrueTypeFontSubSet.HeadLocaFormatOffset);
         var locaShortTable = Rf.ReadUnsignedShort() == 0;
-        tableLocation = Tables["loca"];
+        tableLocation = Tables[key: "loca"];
+
         if (tableLocation == null)
         {
             return;
@@ -1794,10 +1859,12 @@ internal class TrueTypeFont : BaseFont
 
         Rf.Seek(tableLocation[0]);
         int[] locaTable;
+
         if (locaShortTable)
         {
             var entries = tableLocation[1] / 2;
             locaTable = new int[entries];
+
             for (var k = 0; k < entries; ++k)
             {
                 locaTable[k] = Rf.ReadUnsignedShort() * 2;
@@ -1807,13 +1874,15 @@ internal class TrueTypeFont : BaseFont
         {
             var entries = tableLocation[1] / 4;
             locaTable = new int[entries];
+
             for (var k = 0; k < entries; ++k)
             {
                 locaTable[k] = Rf.ReadInt();
             }
         }
 
-        tableLocation = Tables["glyf"];
+        tableLocation = Tables[key: "glyf"];
+
         if (tableLocation == null)
         {
             throw new DocumentException("Table 'glyf' does not exist in " + FileName + Style);
@@ -1821,19 +1890,20 @@ internal class TrueTypeFont : BaseFont
 
         var tableGlyphOffset = tableLocation[0];
         Bboxes = new int[locaTable.Length - 1][];
+
         for (var glyph = 0; glyph < locaTable.Length - 1; ++glyph)
         {
             var start = locaTable[glyph];
+
             if (start != locaTable[glyph + 1])
             {
                 Rf.Seek(tableGlyphOffset + start + 2);
+
                 Bboxes[glyph] = new[]
-                                {
-                                    Rf.ReadShort() * 1000 / Head.UnitsPerEm,
-                                    Rf.ReadShort() * 1000 / Head.UnitsPerEm,
-                                    Rf.ReadShort() * 1000 / Head.UnitsPerEm,
-                                    Rf.ReadShort() * 1000 / Head.UnitsPerEm,
-                                };
+                {
+                    Rf.ReadShort() * 1000 / Head.UnitsPerEm, Rf.ReadShort() * 1000 / Head.UnitsPerEm,
+                    Rf.ReadShort() * 1000 / Head.UnitsPerEm, Rf.ReadShort() * 1000 / Head.UnitsPerEm
+                };
             }
         }
     }
@@ -1948,17 +2018,17 @@ internal class TrueTypeFont : BaseFont
         /// <summary>
         ///     A variable.
         /// </summary>
+        internal readonly byte[] Panose = new byte[10];
+
+        /// <summary>
+        ///     A variable.
+        /// </summary>
         internal int FsSelection;
 
         /// <summary>
         ///     A variable.
         /// </summary>
         internal short FsType;
-
-        /// <summary>
-        ///     A variable.
-        /// </summary>
-        internal readonly byte[] Panose = new byte[10];
 
         /// <summary>
         ///     A variable.

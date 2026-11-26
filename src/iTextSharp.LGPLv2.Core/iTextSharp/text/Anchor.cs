@@ -28,7 +28,7 @@ public class Anchor : Phrase
     /// <overloads>
     ///     Has nine overloads.
     /// </overloads>
-    public Anchor() : base(16)
+    public Anchor() : base(leading: 16)
     {
     }
 
@@ -103,8 +103,7 @@ public class Anchor : Phrase
     /// <param name="phrase">a  Phrase </param>
     public Anchor(Phrase phrase) : base(phrase)
     {
-        var anchor = phrase as Anchor;
-        if (anchor != null)
+        if (phrase is Anchor anchor)
         {
             var a = anchor;
             Name = a.name;
@@ -124,8 +123,13 @@ public class Anchor : Phrase
         get
         {
             var tmp = new List<Chunk>();
-            var localDestination = reference != null && reference.StartsWith("#", StringComparison.Ordinal);
+            var localDestination = reference != null && reference.StartsWith(value: '#'
+#if NET_11
+            , StringComparison.Ordinal
+#endif			
+			);
             var notGotoOk = true;
+
             foreach (Chunk chunk in this)
             {
                 if (name != null && notGotoOk && !chunk.IsEmpty())
@@ -136,7 +140,7 @@ public class Anchor : Phrase
 
                 if (localDestination)
                 {
-                    chunk.SetLocalGoto(reference.Substring(1));
+                    chunk.SetLocalGoto(reference.Substring(startIndex: 1));
                 }
                 else if (reference != null)
                 {
@@ -215,8 +219,13 @@ public class Anchor : Phrase
 
         try
         {
-            var localDestination = reference != null && reference.StartsWith("#", StringComparison.Ordinal);
+            var localDestination = reference != null && reference.StartsWith(value: '#'
+#if NET_11
+            , StringComparison.Ordinal
+#endif			
+			);
             var notGotoOk = true;
+
             foreach (var chunk in Chunks)
             {
                 if (name != null && notGotoOk && !chunk.IsEmpty())
@@ -227,7 +236,7 @@ public class Anchor : Phrase
 
                 if (localDestination)
                 {
-                    chunk.SetLocalGoto(reference.Substring(1));
+                    chunk.SetLocalGoto(reference.Substring(startIndex: 1));
                 }
                 else if (reference != null)
                 {

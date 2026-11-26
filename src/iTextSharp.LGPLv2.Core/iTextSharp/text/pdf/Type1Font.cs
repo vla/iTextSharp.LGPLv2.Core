@@ -198,8 +198,6 @@ internal class Type1Font : BaseFont
 
                 if (istr == null)
                 {
-                    Console.Error.WriteLine(afmFile + " not found as resource.");
-
                     throw new DocumentException(afmFile + " not found as resource.");
                 }
 
@@ -332,7 +330,11 @@ internal class Type1Font : BaseFont
             FontSpecific = false;
         }
 
-        if (!encoding.StartsWith(value: "#", StringComparison.Ordinal))
+        if (!encoding.StartsWith(value: '#'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																								
+		))
         {
             PdfEncodings.ConvertToBytes(text: " ", enc); // check if the encoding exists
         }

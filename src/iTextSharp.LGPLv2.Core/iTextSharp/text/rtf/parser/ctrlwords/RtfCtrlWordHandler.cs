@@ -103,9 +103,14 @@ public class RtfCtrlWordHandler
     /// <param name="prefix"></param>
     /// <param name="suffix"></param>
     /// <param name="specialHandler"></param>
-    public RtfCtrlWordHandler(RtfParser rtfParser, string ctrlWord, int defaultParameterValue,
-                              bool passDefaultParameterValue,
-                              int ctrlWordType, string prefix, string suffix, string specialHandler)
+    public RtfCtrlWordHandler(RtfParser rtfParser,
+        string ctrlWord,
+        int defaultParameterValue,
+        bool passDefaultParameterValue,
+        int ctrlWordType,
+        string prefix,
+        string suffix,
+        string specialHandler)
     {
         RtfParser = rtfParser;
         CtrlWord = ctrlWord;
@@ -124,7 +129,11 @@ public class RtfCtrlWordHandler
             }
 
             var arg1 = ""; // stylesheet value - S, CS, TS
-            RtfDestinationMgr.AddDestination(CtrlWord, new object[] { SpecialHandler, arg1 });
+
+            RtfDestinationMgr.AddDestination(CtrlWord, new object[]
+            {
+                SpecialHandler, arg1
+            });
         }
         else
         {
@@ -139,7 +148,11 @@ public class RtfCtrlWordHandler
                 }
                 else
                 {
-                    if (SpecialHandler.Length > 1 && SpecialHandler.EndsWith(".", StringComparison.Ordinal))
+                    if (SpecialHandler.Length > 1 && SpecialHandler.EndsWith(value: '.'
+#if NET_11
+            , StringComparison.Ordinal
+#endif																																																																								
+					))
                     {
                         SpecialHandler +=
                             CtrlWord; // if string length>1 and ends with a period, it's a group. Add ctrlWord
@@ -177,7 +190,7 @@ public class RtfCtrlWordHandler
             CtrlWordData.Param = DefaultParameterValue.ToString(CultureInfo.InvariantCulture);
         }
 
-        if (CtrlWordData.CtrlWord.Equals("*", StringComparison.Ordinal))
+        if (CtrlWordData.CtrlWord.Equals(value: "*", StringComparison.Ordinal))
         {
             return true;
         }
@@ -193,6 +206,7 @@ public class RtfCtrlWordHandler
             case RtfCtrlWordType.TOGGLE:
             case RtfCtrlWordType.VALUE:
                 dest = RtfParser.GetCurrentDestination();
+
                 if (dest != null)
                 {
                     handled = dest.HandleControlWord(CtrlWordData);
@@ -202,9 +216,11 @@ public class RtfCtrlWordHandler
 
             case RtfCtrlWordType.SYMBOL:
                 dest = RtfParser.GetCurrentDestination();
+
                 if (dest != null)
                 {
                     string data = null;
+
                     // if doing an import, then put the control word in the output stream through the character handler
                     if (RtfParser.IsImport())
                     {
@@ -237,14 +253,18 @@ public class RtfCtrlWordHandler
             case RtfCtrlWordType.DESTINATION:
                 // set the destination
                 var x = 0;
-                if (CtrlWord == "shppict" || CtrlWord == "nonshppict")
+
+                if (string.Equals(CtrlWord, b: "shppict", StringComparison.Ordinal) ||
+                    string.Equals(CtrlWord, b: "nonshppict", StringComparison.Ordinal))
                 {
                     x++;
                 }
 
                 handled = RtfParser.SetCurrentDestination(CtrlWord);
+
                 // let destination handle the ctrl word now.
                 dest = RtfParser.GetCurrentDestination();
+
                 if (dest != null)
                 {
                     if (dest.GetNewTokeniserState() == RtfParser.TOKENISER_IGNORE_RESULT)
@@ -261,6 +281,7 @@ public class RtfCtrlWordHandler
         }
 
         AfterControlWord();
+
         return result;
     }
 
@@ -269,9 +290,11 @@ public class RtfCtrlWordHandler
     ///     @since 2.0.8
     /// </summary>
     /// <returns> false  = stop processing,  true  = continue processing</returns>
-    protected static bool AfterControlWord() =>
-        // TODO: This is where events would be triggered
-        true;
+    protected static bool AfterControlWord()
+        =>
+
+            // TODO: This is where events would be triggered
+            true;
 
     /// <summary>
     ///     Pre-processing before the control word.
@@ -283,26 +306,16 @@ public class RtfCtrlWordHandler
     /// <summary>
     ///     Primary purpose is for \* control word and event handling.
     /// </summary>
-    protected static bool BeforeControlWord() =>
-        // TODO: This is where events would be triggered
-        true;
+    protected static bool BeforeControlWord()
+        =>
+
+            // TODO: This is where events would be triggered
+            true;
 
     /// <summary>
     ///     Handle the control word.
     ///     @since 2.0.8
     /// </summary>
     /// <returns> true  if control word was handled,  false  if it was not handled.</returns>
-    protected static bool OnControlWord() =>
-        // TODO: This is where events would be triggered
-        false;
-
-    /// <summary>
-    ///     Debug function to print class/method
-    ///     @since 2.0.8
-    /// </summary>
-    /// <param name="txt">The  String  to output.</param>
-    private void printDebug(string txt)
-    {
-        Console.Out.WriteLine(GetType().Name + " : " + txt);
-    }
+    protected static bool OnControlWord() => false;
 }
